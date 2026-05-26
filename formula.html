@@ -1,0 +1,384 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>動力推算式・算出根拠の説明 - AgitatorSim</title>
+    <!-- Google Fonts -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Outfit:wght@300;400;500;600;700&family=Noto+Sans+JP:wght@300;400;500;700&display=swap" rel="stylesheet">
+    <!-- CSS Link (Reuse Main Styling) -->
+    <link rel="stylesheet" href="style.css">
+    <!-- Feather Icons for Buttons -->
+    <script src="feather.min.js"></script>
+    <!-- KaTeX for Beautiful Math Equations -->
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.16.8/dist/katex.min.css">
+    <script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.8/dist/katex.min.js"></script>
+    <script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.8/dist/contrib/auto-render.min.js" onload="renderMathInElement(document.body, {delimiters: [{left: '$$', right: '$$', display: true}, {left: '$', right: '$', display: false}]});"></script>
+    <style>
+        .formula-container {
+            max-width: 900px;
+            margin: 40px auto;
+            padding: 0 24px;
+            display: flex;
+            flex-direction: column;
+            gap: 32px;
+        }
+        .formula-card {
+            background-color: var(--bg-secondary);
+            border: 1px solid var(--card-border);
+            border-radius: var(--border-radius-lg);
+            padding: 32px;
+            box-shadow: 0 4px 20px rgba(0, 0, 0, 0.2);
+            transition: transform 0.2s ease, box-shadow 0.2s ease;
+        }
+        .formula-card:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 8px 30px rgba(6, 182, 212, 0.08);
+            border-color: rgba(6, 182, 212, 0.2);
+        }
+        .formula-title {
+            font-family: 'Outfit', sans-serif;
+            font-size: 1.4rem;
+            color: var(--text-primary);
+            border-bottom: 2px solid var(--accent-glow);
+            padding-bottom: 12px;
+            margin-bottom: 20px;
+            display: flex;
+            align-items: center;
+            gap: 12px;
+        }
+        .formula-title svg {
+            color: var(--accent-color);
+        }
+        .formula-block {
+            background-color: rgba(0, 0, 0, 0.2);
+            padding: 20px;
+            border-radius: var(--border-radius-md);
+            margin: 20px 0;
+            overflow-x: auto;
+            border-left: 4px solid var(--accent-color);
+        }
+        .parameter-list {
+            margin-top: 16px;
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+            font-size: 0.9rem;
+            line-height: 1.6;
+        }
+        .parameter-item {
+            display: grid;
+            grid-template-columns: 140px 1fr;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.02);
+            padding-bottom: 6px;
+        }
+        .parameter-symbol {
+            font-weight: 600;
+            color: var(--accent-color);
+            font-family: 'Inter', monospace;
+        }
+        .back-nav {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            border-bottom: 1px solid var(--card-border);
+            padding-bottom: 16px;
+            margin-bottom: 16px;
+        }
+        .back-nav h1 {
+            font-family: 'Outfit', sans-serif;
+            font-size: 1.8rem;
+            font-weight: 700;
+            background: linear-gradient(135deg, #fff 0%, var(--text-secondary) 100%);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+        }
+        p {
+            line-height: 1.7;
+            color: var(--text-secondary);
+            margin-bottom: 16px;
+        }
+        .highlight-text {
+            color: var(--text-primary);
+            font-weight: 500;
+        }
+    </style>
+</head>
+<body>
+    <div class="app-container" style="display: block; overflow-y: auto; height: 100vh; width: 100vw;">
+        <div class="formula-container">
+            <!-- Navigation -->
+            <div class="back-nav">
+                <h1>動力特性の算出根拠・推算式説明</h1>
+                <a href="index.html" class="btn btn-primary" style="width: auto;">
+                    <i data-feather="arrow-left"></i> シミュレーターに戻る
+                </a>
+            </div>
+
+            <!-- Card 1: Experimental Quantities -->
+            <div class="formula-card">
+                <div class="formula-title">
+                    <i data-feather="activity"></i>
+                    <span>1. 実験データの物理量・無次元数の算出式</span>
+                </div>
+                <p>
+                    実験値シートに入力されたトルク等のデータから、攪拌状態を表す代表的な無次元数（レイノルズ数、動力数、フルード数）を以下の定義に基づいて算出しています。
+                </p>
+                
+                <div class="formula-block">
+                    $$\text{攪拌レイノルズ数 } Re = \frac{\rho \, n \, d^2}{\mu}$$
+                </div>
+                <div class="formula-block">
+                    $$\text{動力数 } Np = \frac{P}{\rho \, n^3 \, d^5}$$
+                </div>
+                <div class="formula-block">
+                    $$\text{攪拌所要動力 } P = 2 \pi \, n \, (T - T_b)$$
+                </div>
+                <div class="formula-block">
+                    $$\text{フルード数 } Fr = \frac{n^2 \, D_T}{g}$$
+                </div>
+
+                <div class="parameter-list">
+                    <div class="parameter-item">
+                        <span class="parameter-symbol">$Re$</span>
+                        <span>攪拌レイノルズ数 [-]（慣性力と粘性力の比）</span>
+                    </div>
+                    <div class="parameter-item">
+                        <span class="parameter-symbol">$Np$</span>
+                        <span>動力数 [-]（所要動力の無次元数）</span>
+                    </div>
+                    <div class="parameter-item">
+                        <span class="parameter-symbol">$Fr$</span>
+                        <span>フルード数 [-]（慣性力と重力の比）</span>
+                    </div>
+                    <div class="parameter-item">
+                        <span class="parameter-symbol">$P$</span>
+                        <span>正味攪拌所要動力 [W]</span>
+                    </div>
+                    <div class="parameter-item">
+                        <span class="parameter-symbol">$T$</span>
+                        <span>攪拌時の実測トルク [N·m]</span>
+                    </div>
+                    <div class="parameter-item">
+                        <span class="parameter-symbol">$T_b$</span>
+                        <span>空運転（ブランク）時の損失トルク [N·m]</span>
+                    </div>
+                    <div class="parameter-item">
+                        <span class="parameter-symbol">$n$</span>
+                        <span>攪拌翼の回転速度 [1/s]（$= N \, / \, 60$）</span>
+                    </div>
+                    <div class="parameter-item">
+                        <span class="parameter-symbol">$d$</span>
+                        <span>攪拌翼の直径（翼径） [m]</span>
+                    </div>
+                    <div class="parameter-item">
+                        <span class="parameter-symbol">$D_T$</span>
+                        <span>攪拌槽の内径（槽径） [m]</span>
+                    </div>
+                    <div class="parameter-item">
+                        <span class="parameter-symbol">$\rho$</span>
+                        <span>攪拌液体の密度 [kg/m³]</span>
+                    </div>
+                    <div class="parameter-item">
+                        <span class="parameter-symbol">$\mu$</span>
+                        <span>攪拌液体の粘度 [Pa·s]</span>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Card 2: Kamei-Hiraoka Unbaffled Correlation -->
+            <div class="formula-card">
+                <div class="formula-title">
+                    <i data-feather="cpu"></i>
+                    <span>2. 邪魔板なし動力数推算式（亀井・平岡らの式）</span>
+                </div>
+                <p>
+                    邪魔板がない条件（unbaffled）における動力数 $Np_0$ は、層流域から乱流域までを統一的に評価可能な亀井・平岡らの相関式によって推算されます。
+                </p>
+
+                <div class="formula-block">
+                    $$Np_0 = \left( \frac{1.2 \, \pi^4 \, \beta^2}{V_d} \right) \cdot f$$
+                </div>
+                <p>ここで、各変数および摩擦係数 $f$ は以下の補助関数によって決定されます：</p>
+                
+                <div class="formula-block">
+                    $$f = \frac{C_L}{Re_G} + C_t \left( \frac{1}{C_u/Re_G + Re_G} + \left(\frac{f_\infty}{C_t}\right)^{1/m} \right)^m$$
+                </div>
+                <div class="formula-block">
+                    $$Re_G = \left[ \frac{\pi \, \eta \, \ln(D_T/d)}{4 \left( \frac{d}{\beta \, D_T} \right)} \right] \cdot Re$$
+                </div>
+
+                <div class="parameter-list">
+                    <div class="parameter-item">
+                        <span class="parameter-symbol">$\beta$</span>
+                        <span>$\displaystyle \beta = \frac{2 \ln(D_T/d)}{D_T/d - d/D_T}$ （幾何学的パラメータ）</span>
+                    </div>
+                    <div class="parameter-item">
+                        <span class="parameter-symbol">$\eta$</span>
+                        <span>$\displaystyle \eta = \frac{0.711 \left[ 0.157 + \left( n_p \ln(D_T/d) \right)^{0.611} \right]}{n_p^{0.52} \left[ 1 - (d/D_T)^2 \right]}$ （循環流量比に関するパラメータ）</span>
+                    </div>
+                    <div class="parameter-item">
+                        <span class="parameter-symbol">$\gamma$</span>
+                        <span>$\displaystyle \gamma = \left[ \frac{\eta \ln(D_T/d)}{(\beta D_T/d)^5} \right]^{1/3}$</span>
+                    </div>
+                    <div class="parameter-item">
+                        <span class="parameter-symbol">$X$</span>
+                        <span>$\displaystyle X = \frac{\gamma \, n_p^{0.7} \, b \sin^{1.6}(\theta)}{H}$ （動力相関変数）</span>
+                    </div>
+                    <div class="parameter-item">
+                        <span class="parameter-symbol">$V_d$</span>
+                        <span>$\displaystyle V_d = \frac{8 d^3}{D_T^2 \, H}$ （無次元翼体積因子）</span>
+                    </div>
+                    <div class="parameter-item">
+                        <span class="parameter-symbol">$C_L$</span>
+                        <span>$\displaystyle C_L = 0.215 \, \eta \, n_p \left( \frac{d}{H} \right) \left[ 1 - (d/D_T)^2 \right] + 1.83 \left( \frac{b \sin\theta}{H} \right) \left( \frac{n_p}{2 \sin\theta} \right)^{1/3}$</span>
+                    </div>
+                    <div class="parameter-item">
+                        <span class="parameter-symbol">$C_u$</span>
+                        <span>$\displaystyle C_u = 23.8 \left(\frac{d}{D_T}\right)^{-3.24} \left( \frac{b \sin\theta}{D_T} \right)^{-1.18} X^{-0.74}$</span>
+                    </div>
+                    <div class="parameter-item">
+                        <span class="parameter-symbol">$f_\infty$</span>
+                        <span>$\displaystyle f_\infty = 0.0151 \left( \frac{d}{D_T} \right) C_t^{0.308}$ （極限摩擦係数）</span>
+                    </div>
+                </div>
+
+                <h3 style="font-size: 1rem; color: var(--text-primary); margin: 24px 0 12px 0;">パドル・タービン翼用の定数相関 ($C_t, m$)</h3>
+                <div class="formula-block">
+                    $$C_t = \left[ \left(1.96 \, X^{1.19}\right)^{-7.8} + 0.25^{-7.8} \right]^{-1/7.8}$$
+                </div>
+                <div class="formula-block">
+                    $$m = \left[ \left(0.71 \, X^{0.373}\right)^{-7.8} + 0.333^{-7.8} \right]^{-1/7.8}$$
+                </div>
+            </div>
+
+            <!-- Card 3: Kato Baffled Modifications -->
+            <div class="formula-card">
+                <div class="formula-title">
+                    <i data-feather="settings"></i>
+                    <span>3. プロペラ・ファウドラー翼用の加藤らの修正式</span>
+                </div>
+                <p>
+                    翼種が「プロペラ」または「ファウドラー翼（後退翼）」の場合、剪断特性や流れパターンの違いを考慮し、加藤らの修正式に基づき、形状パラメータ $C_t$ および $m$ の算出式を以下のように切り替えます。
+                </p>
+
+                <div class="formula-block">
+                    $$C_t = \left[ \left(3.0 \, X^{1.5}\right)^{-7.8} + 0.25^{-7.8} \right]^{-1/7.8}$$
+                </div>
+                <div class="formula-block">
+                    $$m = \left[ \left(0.8 \, X^{0.373}\right)^{-7.8} + 0.333^{-7.8} \right]^{-1/7.8}$$
+                </div>
+            </div>
+
+            <!-- Card 4: Baffled Correlation (Kamei Equation) -->
+            <div class="formula-card">
+                <div class="formula-title">
+                    <i data-feather="columns"></i>
+                    <span>4. 邪魔板あり動力数推算式（亀井の式）</span>
+                </div>
+                <p>
+                    攪拌槽に邪魔板（baffle）が設置されている場合、液の旋回流が抑制され、消費動力が増加します。完全邪魔板効果時の最大動力数 $Np_{Max}$ をベースとし、邪魔板仕様（幅、枚数）に応じて変化する動力数 $Np$ を以下の相関式で推算します。
+                </p>
+
+                <div class="formula-block">
+                    $$Np = Np_{Max} \cdot \left( 1 + x^{-3} \right)^{-1/3}$$
+                </div>
+                <p>ここで無次元パラメータ $x$ は以下のように定義されます：</p>
+
+                <div class="formula-block">
+                    $$\text{パドル・タービン翼以外: } x = \frac{4.5 \left( \frac{B_w}{D_T} \right) n_B^{0.8}}{\left(\frac{2\theta}{\pi}\right)^{0.72} Np_{Max}^{0.2}} + \frac{Np_0}{Np_{Max}}$$
+                </div>
+                <div class="formula-block">
+                    $$\text{フラットパドル・フラットタービン翼: } x = \frac{4.5 \left( \frac{B_w}{D_T} \right) n_B^{0.8}}{Np_{Max}^{0.2}} + \frac{Np_0}{Np_{Max}}$$
+                </div>
+
+                <div class="parameter-list">
+                    <div class="parameter-item">
+                        <span class="parameter-symbol">$B_w$</span>
+                        <span>邪魔板の幅 [m]</span>
+                    </div>
+                    <div class="parameter-item">
+                        <span class="parameter-symbol">$n_B$</span>
+                        <span>邪魔板の枚数 [枚]</span>
+                    </div>
+                    <div class="parameter-item">
+                        <span class="parameter-symbol">$\theta$</span>
+                        <span>羽根の傾斜角度 [rad]（$= \theta^\circ \cdot \pi \, / \, 180$）</span>
+                    </div>
+                    <div class="parameter-item">
+                        <span class="parameter-symbol">$Np_{Max}$</span>
+                        <span>完全邪魔板条件（段数補正済）における最大動力数 [-]</span>
+                    </div>
+                </div>
+
+                <h3 style="font-size: 1rem; color: var(--text-primary); margin: 24px 0 12px 0;">段数補正済最大動力数 $Np_{Max}$ の算出式（1翼段あたり）</h3>
+                <p>完全邪魔板効果時の動力数 $Np_{Max,1}$ は、翼の形状パラメータに応じて以下のように分岐します：</p>
+                
+                <div class="formula-block">
+                    $$\begin{aligned}
+                    &\text{・フラットパドル / フラットタービン翼:}\\
+                    &\quad Y = n_p^{0.7} \left( \frac{b}{d} \right)\\
+                    &\quad Np_{Max,1} = 
+                    \begin{cases} 
+                    10 \, Y^{1.3} & (Y \le 0.54) \\
+                    8.3 \, Y & (0.54 < Y \le 1.6) \\
+                    10 \, Y^{0.6} & (Y > 1.6) 
+                    \end{cases}
+                    \end{aligned}$$
+                </div>
+                <div class="formula-block">
+                    $$\begin{aligned}
+                    &\text{・傾斜パドル翼:}\\
+                    &\quad Np_{Max,1} = 8.3 \left( \frac{2\theta}{\pi} \right)^{0.9} \left( n_p^{0.7} \, \frac{b}{d} \sin^{1.6}\theta \right)
+                    \end{aligned}$$
+                </div>
+                <div class="formula-block">
+                    $$\begin{aligned}
+                    &\text{・プロペラ / ファウドラー翼:}\\
+                    &\quad Np_{Max,1} = 6.5 \left( n_p^{0.7} \, \frac{b}{d} \sin^{1.6}\theta \right)^{1.7}
+                    \end{aligned}$$
+                </div>
+                
+                <p>複数段のインペラが設置されている場合（段数 $N_{stage}$）、トータルの最大動力数は以下のように段数倍されます：</p>
+                <div class="formula-block">
+                    $$Np_{Max} = Np_{Max,1} \cdot N_{stage}$$
+                </div>
+            </div>
+
+            <!-- Card 5: Boundary Condition -->
+            <div class="formula-card">
+                <div class="formula-title">
+                    <i data-feather="alert-circle"></i>
+                    <span>5. 層流域での下限物理境界条件（平岡らの学術ルール）</span>
+                </div>
+                <p>
+                    邪魔板ありの推算式（亀井の式）を単純に適用すると、きわめて低いレイノルズ数領域（層流域、すなわち $Re \to 0$）において、算出される動力数 $Np$ が最大動力数 $Np_{Max}$ に張り付いてしまい、フラット（平坦）になるという物理的な不整合（層流域で粘性抵抗が正しく反映されない）が生じます。
+                </p>
+                <p>
+                    この物理的矛盾を解消するため、新潟大学・平岡らの研究や攪拌工学の学術的共通ルールに基づき、以下の下限境界条件（閾値処理）を設けています。
+                </p>
+
+                <div class="formula-block">
+                    $$Np = \max(Np_{baffled}, Np_0)$$
+                </div>
+                <p>
+                    すなわち、邪魔板ありとして計算された $Np_{baffled}$ が、邪魔板なしの動力数 $Np_0$ よりも小さくなった場合は、強制的に下限値として <span class="highlight-text">$Np = Np_0$</span> を採用します。これにより、層流域において $Np$ 曲線が $Np_0$（Re数の増加に対して右肩下がりの対数直線）と完全に一致し、物理的に正しい挙動になります。
+                </p>
+            </div>
+
+            <div style="text-align: center; margin-bottom: 40px;">
+                <a href="index.html" class="btn btn-secondary" style="width: auto; display: inline-flex;">
+                    <i data-feather="arrow-left"></i> シミュレーターへ戻る
+                </a>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // Initialize Feather Icons
+        feather.replace();
+    </script>
+</body>
+</html>

@@ -1,0 +1,948 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>攪拌槽 模式図＆寸法仕様可視化</title>
+    <!-- Google Fonts -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Outfit:wght@300;400;500;600;700&family=Noto+Sans+JP:wght@300;400;500;700&display=swap" rel="stylesheet">
+    <!-- Feather Icons -->
+    <script src="https://unpkg.com/feather-icons"></script>
+    <style>
+        :root {
+            --bg-primary: #0b0f19;
+            --bg-secondary: #131a26;
+            --bg-tertiary: #1b2433;
+            --text-primary: #f3f4f6;
+            --text-secondary: #9ca3af;
+            --text-muted: #6b7280;
+            --accent-color: #06b6d4; /* Cyan */
+            --accent-glow: rgba(6, 182, 212, 0.15);
+            --pink-accent: #ec4899; /* Pink */
+            --card-border: rgba(255, 255, 255, 0.05);
+            --border-radius-lg: 16px;
+            --border-radius-md: 10px;
+            --border-radius-sm: 6px;
+            --font-sans: 'Inter', 'Outfit', 'Noto Sans JP', sans-serif;
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            background-color: var(--bg-primary);
+            color: var(--text-primary);
+            font-family: var(--font-sans);
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+            overflow-x: hidden;
+        }
+
+        header {
+            padding: 16px 24px;
+            background-color: rgba(19, 26, 38, 0.7);
+            backdrop-filter: blur(12px);
+            border-bottom: 1px solid var(--card-border);
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            position: sticky;
+            top: 0;
+            z-index: 100;
+        }
+
+        .header-logo {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            font-family: 'Outfit', sans-serif;
+            font-weight: 700;
+            font-size: 1.25rem;
+        }
+
+        .header-logo i {
+            color: var(--accent-color);
+        }
+
+        .sync-badge {
+            background-color: rgba(16, 185, 129, 0.1);
+            color: #10b981;
+            border: 1px solid rgba(16, 185, 129, 0.2);
+            padding: 4px 8px;
+            border-radius: var(--border-radius-sm);
+            font-size: 0.75rem;
+            font-weight: 500;
+            display: flex;
+            align-items: center;
+            gap: 6px;
+        }
+
+        .sync-badge.offline {
+            background-color: rgba(239, 68, 68, 0.1);
+            color: #ef4444;
+            border-color: rgba(239, 68, 68, 0.2);
+        }
+
+        .main-layout {
+            display: grid;
+            grid-template-columns: 1.2fr 0.8fr;
+            gap: 24px;
+            padding: 24px;
+            flex-grow: 1;
+            max-width: 1400px;
+            width: 100%;
+            margin: 0 auto;
+        }
+
+        @media (max-width: 968px) {
+            .main-layout {
+                grid-template-columns: 1fr;
+            }
+        }
+
+        .card {
+            background-color: var(--bg-secondary);
+            border: 1px solid var(--card-border);
+            border-radius: var(--border-radius-lg);
+            padding: 24px;
+            box-shadow: 0 4px 24px rgba(0, 0, 0, 0.3);
+            display: flex;
+            flex-direction: column;
+            gap: 20px;
+        }
+
+        .visualizer-card {
+            align-items: center;
+            justify-content: center;
+            position: relative;
+            overflow: hidden;
+            min-height: 600px;
+        }
+
+        .vessel-svg-container {
+            width: 100%;
+            max-width: 500px;
+            height: auto;
+            aspect-ratio: 5 / 6;
+        }
+
+        .vessel-svg-container svg {
+            width: 100%;
+            height: 100%;
+        }
+
+        /* Feather icons styling to prevent stretching */
+        .feather {
+            width: 20px;
+            height: 20px;
+            stroke-width: 2;
+            stroke-linecap: round;
+            stroke-linejoin: round;
+            fill: none;
+            display: inline-block;
+            vertical-align: middle;
+        }
+
+        .header-logo .feather {
+            width: 24px;
+            height: 24px;
+        }
+
+        .info-header h2 .feather {
+            width: 22px;
+            height: 22px;
+        }
+
+        /* SVG styles */
+        .svg-vessel-outline {
+            fill: none;
+            stroke: var(--text-primary);
+            stroke-width: 2.5;
+            stroke-linecap: round;
+            stroke-linejoin: round;
+        }
+
+        .svg-liquid {
+            fill: rgba(6, 182, 212, 0.12);
+            stroke: rgba(6, 182, 212, 0.4);
+            stroke-width: 1;
+            transition: all 0.5s cubic-bezier(0.16, 1, 0.3, 1);
+        }
+
+        .svg-shaft {
+            stroke: #9ca3af;
+            stroke-width: 3.5;
+            stroke-linecap: round;
+        }
+
+        .svg-impeller {
+            fill: var(--pink-accent);
+            stroke: #db2777;
+            stroke-width: 1.5;
+            transition: all 0.5s cubic-bezier(0.16, 1, 0.3, 1);
+        }
+
+        .svg-baffle {
+            fill: rgba(16, 185, 129, 0.2);
+            stroke: #10b981;
+            stroke-width: 1.5;
+            transition: all 0.5s cubic-bezier(0.16, 1, 0.3, 1);
+        }
+
+        .svg-dim-line {
+            stroke: var(--accent-color);
+            stroke-width: 1.2;
+            stroke-dasharray: 3 3;
+        }
+
+        .svg-arrow-line {
+            stroke: var(--accent-color);
+            stroke-width: 1.5;
+            marker-start: url(#arrow-start);
+            marker-end: url(#arrow-end);
+            transition: all 0.5s cubic-bezier(0.16, 1, 0.3, 1);
+        }
+
+        .svg-dim-text {
+            fill: var(--accent-color);
+            font-size: 11px;
+            font-family: 'Outfit', 'Inter', sans-serif;
+            font-weight: 600;
+            text-anchor: middle;
+            background: var(--bg-secondary);
+            transition: all 0.5s cubic-bezier(0.16, 1, 0.3, 1);
+        }
+
+        /* Dimension labels list */
+        .info-card {
+            justify-content: flex-start;
+        }
+
+        .info-header h2 {
+            font-family: 'Outfit', sans-serif;
+            font-size: 1.3rem;
+            font-weight: 600;
+            color: var(--text-primary);
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            border-bottom: 1px solid var(--card-border);
+            padding-bottom: 12px;
+            margin-bottom: 16px;
+        }
+
+        .info-header h2 i {
+            color: var(--pink-accent);
+        }
+
+        .dim-grid {
+            display: grid;
+            grid-template-columns: 1fr;
+            gap: 14px;
+        }
+
+        .dim-item {
+            background-color: var(--bg-tertiary);
+            border: 1px solid var(--card-border);
+            border-radius: var(--border-radius-md);
+            padding: 12px 16px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            transition: transform 0.2s, border-color 0.2s;
+        }
+
+        .dim-item:hover {
+            transform: translateX(4px);
+            border-color: rgba(6, 182, 212, 0.3);
+        }
+
+        .dim-label {
+            display: flex;
+            flex-direction: column;
+            gap: 2px;
+        }
+
+        .dim-name {
+            font-size: 0.85rem;
+            font-weight: 600;
+            color: var(--text-secondary);
+        }
+
+        .dim-desc {
+            font-size: 0.7rem;
+            color: var(--text-muted);
+        }
+
+        .dim-val {
+            font-family: 'Outfit', monospace;
+            font-size: 1.1rem;
+            font-weight: 700;
+            color: var(--accent-color);
+            text-shadow: 0 0 10px rgba(6, 182, 212, 0.2);
+        }
+
+        .notes-section {
+            margin-top: 10px;
+            background-color: rgba(6, 182, 212, 0.03);
+            border: 1px dashed rgba(6, 182, 212, 0.15);
+            border-radius: var(--border-radius-md);
+            padding: 14px;
+            font-size: 0.8rem;
+            line-height: 1.5;
+            color: var(--text-secondary);
+        }
+
+        .notes-section strong {
+            color: var(--text-primary);
+            display: block;
+            margin-bottom: 6px;
+        }
+
+        .vessel-title {
+            position: absolute;
+            top: 20px;
+            left: 24px;
+            font-family: 'Outfit', sans-serif;
+            font-size: 1rem;
+            font-weight: 600;
+            color: var(--text-secondary);
+        }
+    </style>
+</head>
+<body>
+    <header>
+        <div class="header-logo">
+            <i data-feather="image"></i>
+            <span>AgitatorSim: 槽寸法・形状模式図</span>
+        </div>
+        <div id="sync-status" class="sync-badge">
+            <i data-feather="refresh-cw" style="width:14px; height:14px; animation: spin 2s linear infinite;"></i>
+            <span>メイン画面とリアルタイム同期中</span>
+        </div>
+    </header>
+
+    <div class="main-layout">
+        <!-- Vessel dynamic diagram card -->
+        <div class="card visualizer-card">
+            <div class="vessel-title" id="vessel-head-title">鏡板形式: --</div>
+            <div class="vessel-svg-container">
+                <svg viewBox="0 0 500 600" id="agitator-svg">
+                    <defs>
+                        <!-- Markers for double-headed arrows -->
+                        <marker id="arrow-start" viewBox="0 0 10 10" refX="5" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse">
+                            <path d="M 10 0 L 0 5 L 10 10 z" fill="#06b6d4" />
+                        </marker>
+                        <marker id="arrow-end" viewBox="0 0 10 10" refX="5" refY="5" markerWidth="6" markerHeight="6" orient="auto">
+                            <path d="M 0 0 L 10 5 L 0 10 z" fill="#06b6d4" />
+                        </marker>
+                        <!-- Marker for single-headed arrow (e.g. Clearance) -->
+                        <marker id="arrow-up" viewBox="0 0 10 10" refX="5" refY="5" markerWidth="6" markerHeight="6" orient="auto">
+                            <path d="M 0 0 L 10 5 L 0 10 z" fill="#06b6d4" />
+                        </marker>
+                    </defs>
+
+                    <!-- Liquid Volume (Back Layer) -->
+                    <path id="liquid-path" class="svg-liquid" d="" />
+
+                    <!-- Vessel Outer Outline -->
+                    <path id="vessel-path" class="svg-vessel-outline" d="" />
+
+                    <!-- Vessel Top Lip / Flange -->
+                    <line x1="80" y1="100" x2="420" y2="100" stroke="#f3f4f6" stroke-width="4" stroke-linecap="round" />
+                    <!-- Flange top nozzle -->
+                    <rect x="230" y="80" width="40" height="20" fill="none" stroke="#f3f4f6" stroke-width="2.5" />
+                    <line x1="220" y1="80" x2="280" y2="80" stroke="#f3f4f6" stroke-width="4" />
+
+                    <!-- Baffles (if active) -->
+                    <g id="baffles-group"></g>
+
+                    <!-- Impeller Shaft (Center) -->
+                    <line id="shaft-line" x1="250" y1="80" x2="250" y2="350" class="svg-shaft" />
+
+                    <!-- Impellers Group -->
+                    <g id="impellers-group"></g>
+
+                    <!-- Dimension Guides & Lines -->
+                    <g id="dimensions-group">
+                        <!-- DT (Vessel Diameter) -->
+                        <path id="dim-dt-guide-l" class="svg-dim-line" d="M 100 100 L 100 550" />
+                        <path id="dim-dt-guide-r" class="svg-dim-line" d="M 400 100 L 400 550" />
+                        <line id="dim-dt-line" x1="100" y1="540" x2="400" y2="540" class="svg-arrow-line" />
+                        <text id="dim-dt-text" x="250" y="534" class="svg-dim-text">DT = -- m</text>
+
+                        <!-- H (Liquid Height) -->
+                        <path id="dim-h-guide-top" class="svg-dim-line" d="M 400 300 L 460 300" />
+                        <path id="dim-h-guide-bottom" class="svg-dim-line" d="M 250 480 L 460 480" />
+                        <line id="dim-h-line" x1="450" y1="300" x2="450" y2="480" class="svg-arrow-line" />
+                        <text id="dim-h-text" x="455" y="390" class="svg-dim-text" transform="rotate(90, 455, 390)" style="text-anchor: middle; dominant-baseline: hanging;">H = -- m</text>
+
+                        <!-- d (Impeller Diameter) -->
+                        <path id="dim-d-guide-l" class="svg-dim-line" d="" />
+                        <path id="dim-d-guide-r" class="svg-dim-line" d="" />
+                        <line id="dim-d-line" x1="170" y1="410" x2="330" y2="410" class="svg-arrow-line" />
+                        <text id="dim-d-text" x="250" y="405" class="svg-dim-text">d = -- m</text>
+
+                        <!-- C (Clearance) -->
+                        <!-- C guide is drawn between impeller bottom and vessel bottom -->
+                        <line id="dim-c-line" x1="250" y1="440" x2="250" y2="480" class="svg-arrow-line" />
+                        <text id="dim-c-text" x="260" y="460" class="svg-dim-text" style="text-anchor: start;">C = -- m</text>
+
+                        <!-- b (Impeller Width) -->
+                        <line id="dim-b-line" x1="335" y1="430" x2="335" y2="450" class="svg-arrow-line" />
+                        <text id="dim-b-text" x="345" y="443" class="svg-dim-text" style="text-anchor: start;">b = -- m</text>
+
+                        <!-- Bw (Baffle Width) if active -->
+                        <line id="dim-bw-line" x1="100" y1="130" x2="130" y2="130" class="svg-arrow-line" />
+                        <text id="dim-bw-text" x="115" y="122" class="svg-dim-text">Bw = -- m</text>
+                    </g>
+                </svg>
+            </div>
+        </div>
+
+        <!-- Info / Data Panel -->
+        <div class="card info-card">
+            <div class="info-header">
+                <h2><i data-feather="sliders"></i> 槽構造・寸法パラメータ</h2>
+            </div>
+
+            <div class="dim-grid">
+                <div class="dim-item">
+                    <div class="dim-label">
+                        <span class="dim-name">槽内径 (DT)</span>
+                        <span class="dim-desc">攪拌槽の胴部内径寸法</span>
+                    </div>
+                    <div class="dim-val" id="val-DT">-- m</div>
+                </div>
+
+                <div class="dim-item">
+                    <div class="dim-label">
+                        <span class="dim-name">液高 (H)</span>
+                        <span class="dim-desc">液底最深部から液面までの高さ</span>
+                    </div>
+                    <div class="dim-val" id="val-H">-- m</div>
+                </div>
+
+                <div class="dim-item">
+                    <div class="dim-label">
+                        <span class="dim-name">翼径 (d)</span>
+                        <span class="dim-desc">インペラの回転直径</span>
+                    </div>
+                    <div class="dim-val" id="val-d">-- m</div>
+                </div>
+
+                <div class="dim-item">
+                    <div class="dim-label">
+                        <span class="dim-name">クリアランス (C)</span>
+                        <span class="dim-desc">槽底最深部から最下段インペラ中心（下端）までの距離</span>
+                    </div>
+                    <div class="dim-val" id="val-C">-- m</div>
+                </div>
+
+                <div class="dim-item">
+                    <div class="dim-label">
+                        <span class="dim-name">翼幅 (b)</span>
+                        <span class="dim-desc">インペラ羽根の垂直方向の幅（高さ）</span>
+                    </div>
+                    <div class="dim-val" id="val-b">-- m</div>
+                </div>
+
+                <div class="dim-item">
+                    <div class="dim-label">
+                        <span class="dim-name">インペラ段数</span>
+                        <span class="dim-desc">取り付けられているインペラの垂直段数</span>
+                    </div>
+                    <div class="dim-val" id="val-stages">-- 段</div>
+                </div>
+
+                <div class="dim-item">
+                    <div class="dim-label">
+                        <span class="dim-name">鏡板形状 (底鏡)</span>
+                        <span class="dim-desc">槽の底鏡板の幾何学的形状</span>
+                    </div>
+                    <div class="dim-val" id="val-head" style="font-size:0.95rem;">--</div>
+                </div>
+
+                <div class="dim-item">
+                    <div class="dim-label">
+                        <span class="dim-name">邪魔板仕様</span>
+                        <span class="dim-desc">邪魔板幅 Bw × 枚数 nB</span>
+                    </div>
+                    <div class="dim-val" id="val-baffle" style="font-size:0.95rem;">--</div>
+                </div>
+
+                <div class="dim-item">
+                    <div class="dim-label">
+                        <span class="dim-name">V<sub>液</sub> 概算値</span>
+                        <span class="dim-desc">鏡板形状を考慮した液体積の概算</span>
+                    </div>
+                    <div class="dim-val" id="val-V-est" style="font-size:0.9rem;">-- mL</div>
+                </div>
+
+                <div class="dim-item">
+                    <div class="dim-label">
+                        <span class="dim-name">V<sub>act</sub> 実測値</span>
+                        <span class="dim-desc">P<sub>v</sub>の分母に使用する液量（0 = 概算値使用）</span>
+                    </div>
+                    <div class="dim-val" id="val-V-act" style="font-size:0.9rem;">--</div>
+                </div>
+            </div>
+
+            <div class="notes-section">
+                <strong>💡 可視化システムについて</strong>
+                メイン画面で寸法パラメータを変更すると、この模式図と寸法値は瞬時に同期・再描画されます。
+                <br><br>
+                ※ 描画スケールは槽内径（DT = 300 px）を基準に、他の各部寸法を相対比率で算出して幾何学的に正しく描画しています。
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // Start feather icons
+        feather.replace();
+
+        // Default Config State (will load from localStorage)
+        let config = {
+            DT: 0.105,
+            H: 0.093,
+            d: 0.060,
+            clearance: 0.020,
+            b: 0.020,
+            n_stage: 1,
+            headType: 'semi-elliptical',
+            impellerType: 'pitched-paddle',
+            baffleActive: true,
+            nB: 4,
+            Bw: 0.010,
+            np: 4,
+            theta: 45,
+            V_act: 0.7295
+        };
+
+        // Load State from localStorage
+        function loadState() {
+            const savedState = localStorage.getItem('agitator_current_state');
+            if (savedState) {
+                try {
+                    const parsed = JSON.parse(savedState);
+                    if (parsed.config) {
+                        config = { ...config, ...parsed.config };
+                        document.getElementById('sync-status').className = 'sync-badge';
+                        document.getElementById('sync-status').innerHTML = '<i data-feather="refresh-cw" style="width:14px; height:14px; animation: spin 2s linear infinite;"></i><span>メイン画面とリアルタイム同期中</span>';
+                        feather.replace();
+                    }
+                } catch (e) {
+                    console.error("Failed to parse state", e);
+                }
+            } else {
+                // If no localStorage, try to read from window.opener
+                if (window.opener && window.opener.config) {
+                    config = { ...config, ...window.opener.config };
+                } else {
+                    document.getElementById('sync-status').className = 'sync-badge offline';
+                    document.getElementById('sync-status').innerHTML = '<i data-feather="alert-circle" style="width:14px; height:14px;"></i><span>オフライン表示モード</span>';
+                    feather.replace();
+                }
+            }
+            updateUI();
+            drawVessel();
+        }
+
+        // Window storage event listener for real-time sync across tabs
+        window.addEventListener('storage', (e) => {
+            if (e.key === 'agitator_current_state') {
+                loadState();
+            }
+        });
+
+        // Initialize on load
+        window.addEventListener('load', loadState);
+
+        // Map English values to Japanese friendly terms
+        const headTypeMap = {
+            'flat': '平底',
+            'semi-elliptical': '半楕円形 (2:1)',
+            'dish': '皿型',
+            'hemispherical': '全半球形'
+        };
+
+        const impellerMap = {
+            'pitched-paddle': '傾斜パドル',
+            'flat-paddle': '平板パドル',
+            'flat-turbine': '平板タービン',
+            'propeller': 'プロペラ',
+            'faudler': 'ファウドラー'
+        };
+
+        function updateUI() {
+            document.getElementById('val-DT').textContent = `${config.DT.toFixed(4)} m`;
+            document.getElementById('val-H').textContent = `${config.H.toFixed(4)} m`;
+            document.getElementById('val-d').textContent = `${config.d.toFixed(4)} m`;
+            document.getElementById('val-C').textContent = `${config.clearance.toFixed(4)} m`;
+            document.getElementById('val-b').textContent = `${config.b.toFixed(4)} m`;
+            document.getElementById('val-stages').textContent = `${config.n_stage} 段`;
+            document.getElementById('val-head').textContent = headTypeMap[config.headType] || config.headType;
+
+            const baffleStr = config.baffleActive 
+                ? `${config.Bw.toFixed(4)} m × ${config.nB}枚` 
+                : 'なし';
+            document.getElementById('val-baffle').textContent = baffleStr;
+
+            // Liquid volume: estimated from dish shape
+            const R = config.DT / 2;
+            const H = config.H;
+            let h_dish = 0, V_dish = 0;
+            if (config.headType === 'semi-elliptical') {
+                h_dish = R / 2;
+                V_dish = Math.PI * R * R * R / 3;
+            } else if (config.headType === 'dish') {
+                h_dish = 0.1935 * config.DT;
+                V_dish = 0.084 * Math.PI * Math.pow(config.DT, 3);
+            } else if (config.headType === 'hemispherical') {
+                h_dish = R;
+                V_dish = (2/3) * Math.PI * R * R * R;
+            }
+            let V_est;
+            if (H <= h_dish && h_dish > 0) {
+                if (config.headType === 'hemispherical') {
+                    V_est = Math.PI * H * H * (3 * R - H) / 3;
+                } else if (config.headType === 'semi-elliptical') {
+                    V_est = Math.PI * R * R * H * H * (h_dish/2 - H/3) / (h_dish * h_dish);
+                } else {
+                    V_est = V_dish * (H / h_dish);
+                }
+            } else {
+                const h_cyl = Math.max(0, H - h_dish);
+                V_est = V_dish + Math.PI * R * R * h_cyl;
+            }
+            document.getElementById('val-V-est').textContent = `${(V_est * 1e3).toFixed(4)} L`;
+
+            // Actual measured liquid volume (stored in L)
+            const V_act = config.V_act ?? 0;
+            document.getElementById('val-V-act').textContent = V_act > 0
+                ? `${V_act.toFixed(4)} L → Pᵥに使用`
+                : `未入力（概算値 ${(V_est * 1e3).toFixed(4)} L を使用）`;
+
+            document.getElementById('vessel-head-title').textContent = `鏡板形式: ${headTypeMap[config.headType] || config.headType} / インペラ: ${impellerMap[config.impellerType] || config.impellerType}`;
+        }
+
+        function drawVessel() {
+            // Coordinate definitions (viewBox = 0 0 500 600)
+            const cx = 250; // Center X
+            const w_vessel_px = 300; // Fixed visual width of vessel DT
+            const scale = w_vessel_px / config.DT; // scale factor pixels / meter
+
+            const r_vessel = w_vessel_px / 2; // 150 px
+            const lx = cx - r_vessel; // Left wall X = 100
+            const rx = cx + r_vessel; // Right wall X = 400
+
+            const y_top = 130; // Straight cylinder start top
+            const y_cyl_bottom = 440; // Straight cylinder end bottom (before head curve)
+
+            // 1. Calculate bottom head depth h_T in pixels
+            let hb_px = 0; // head depth
+            if (config.headType === 'semi-elliptical') {
+                hb_px = r_vessel / 2; // 75 px (2:1 head)
+            } else if (config.headType === 'dish') {
+                hb_px = r_vessel * 0.388; // ~58 px
+            } else if (config.headType === 'hemispherical') {
+                hb_px = r_vessel; // 150 px
+            } else {
+                hb_px = 0; // Flat bottom
+            }
+
+            const y_deepest = y_cyl_bottom + hb_px; // deepest bottom point Y
+
+            // 2. Generate Vessel Path
+            let vesselPath = `M ${lx} ${y_top} L ${lx} ${y_cyl_bottom} `;
+            if (config.headType === 'semi-elliptical') {
+                vesselPath += `A ${r_vessel} ${hb_px} 0 0 0 ${rx} ${y_cyl_bottom} `;
+            } else if (config.headType === 'dish') {
+                // Approximate dish bottom: corner radius r=0.1 DT (30px), crown radius R=DT (300px)
+                const cr = 30; // corner radius
+                vesselPath += `A ${cr} ${cr} 0 0 0 ${lx + cr} ${y_cyl_bottom + cr} `;
+                vesselPath += `A ${r_vessel * 2} ${hb_px * 1.2} 0 0 0 ${rx - cr} ${y_cyl_bottom + cr} `;
+                vesselPath += `A ${cr} ${cr} 0 0 0 ${rx} ${y_cyl_bottom} `;
+            } else if (config.headType === 'hemispherical') {
+                vesselPath += `A ${r_vessel} ${r_vessel} 0 0 0 ${rx} ${y_cyl_bottom} `;
+            } else {
+                // Flat
+                vesselPath += `L ${rx} ${y_cyl_bottom} `;
+            }
+            vesselPath += `L ${rx} ${y_top}`;
+
+            document.getElementById('vessel-path').setAttribute('d', vesselPath);
+
+            // 3. Calculate liquid level height and draw liquid volume
+            const h_liquid_px = config.H * scale;
+            const y_liquid = y_deepest - h_liquid_px;
+
+            let liquidPath = "";
+            if (y_liquid < y_cyl_bottom) {
+                // Liquid level is in the straight cylinder section
+                liquidPath = `M ${lx} ${y_liquid} L ${lx} ${y_cyl_bottom} `;
+                if (config.headType === 'semi-elliptical') {
+                    liquidPath += `A ${r_vessel} ${hb_px} 0 0 0 ${rx} ${y_cyl_bottom} `;
+                } else if (config.headType === 'dish') {
+                    const cr = 30;
+                    liquidPath += `A ${cr} ${cr} 0 0 0 ${lx + cr} ${y_cyl_bottom + cr} `;
+                    liquidPath += `A ${r_vessel * 2} ${hb_px * 1.2} 0 0 0 ${rx - cr} ${y_cyl_bottom + cr} `;
+                    liquidPath += `A ${cr} ${cr} 0 0 0 ${rx} ${y_cyl_bottom} `;
+                } else if (config.headType === 'hemispherical') {
+                    liquidPath += `A ${r_vessel} ${r_vessel} 0 0 0 ${rx} ${y_cyl_bottom} `;
+                } else {
+                    liquidPath += `L ${rx} ${y_cyl_bottom} `;
+                }
+                liquidPath += `L ${rx} ${y_liquid} Z`;
+            } else {
+                // Liquid level is inside the bottom head curve (low liquid)
+                // Approximate as simple horizontal crop of the bottom head
+                const liquid_ratio = (y_deepest - y_liquid) / hb_px;
+                const active_width = r_vessel * Math.sqrt(Math.max(0, 1 - Math.pow(1 - liquid_ratio, 2)));
+                const lx_liq = cx - active_width;
+                const rx_liq = cx + active_width;
+                const cur_hb = y_deepest - y_liquid;
+
+                liquidPath = `M ${lx_liq} ${y_liquid} `;
+                if (config.headType === 'flat') {
+                    liquidPath += `L ${rx_liq} ${y_liquid} Z`;
+                } else {
+                    liquidPath += `A ${active_width} ${cur_hb} 0 0 0 ${rx_liq} ${y_liquid} Z`;
+                }
+            }
+
+            document.getElementById('liquid-path').setAttribute('d', liquidPath);
+
+            // 4. Position and Draw Baffles (if active)
+            const bafflesGroup = document.getElementById('baffles-group');
+            bafflesGroup.innerHTML = '';
+            if (config.baffleActive) {
+                const bw_px = config.Bw * scale;
+                // Draw left and right baffles (represent 2D view of baffles)
+                // Set baffle height to 95% of the straight cylinder section, independent of liquid height
+                const baffle_h = (y_cyl_bottom - y_top) * 0.95;
+                const baffle_y_start = y_cyl_bottom - baffle_h;
+
+                // Left baffle
+                const leftBaffle = document.createElementNS('http://www.w3.org/2000/svg', 'rect');
+                leftBaffle.setAttribute('x', lx);
+                leftBaffle.setAttribute('y', baffle_y_start);
+                leftBaffle.setAttribute('width', bw_px);
+                leftBaffle.setAttribute('height', y_cyl_bottom - baffle_y_start);
+                leftBaffle.setAttribute('class', 'svg-baffle');
+                bafflesGroup.appendChild(leftBaffle);
+
+                // Right baffle
+                if (parseInt(config.nB) > 1) {
+                    const rightBaffle = document.createElementNS('http://www.w3.org/2000/svg', 'rect');
+                    rightBaffle.setAttribute('x', rx - bw_px);
+                    rightBaffle.setAttribute('y', baffle_y_start);
+                    rightBaffle.setAttribute('width', bw_px);
+                    rightBaffle.setAttribute('height', y_cyl_bottom - baffle_y_start);
+                    rightBaffle.setAttribute('class', 'svg-baffle');
+                    bafflesGroup.appendChild(rightBaffle);
+                }
+
+                // Show Bw dimension label
+                document.getElementById('dim-bw-line').style.display = 'block';
+                document.getElementById('dim-bw-text').style.display = 'block';
+                document.getElementById('dim-bw-line').setAttribute('x1', lx);
+                document.getElementById('dim-bw-line').setAttribute('x2', lx + bw_px);
+                document.getElementById('dim-bw-text').setAttribute('x', lx + bw_px/2);
+                document.getElementById('dim-bw-text').textContent = `Bw=${config.Bw.toFixed(3)}m`;
+            } else {
+                document.getElementById('dim-bw-line').style.display = 'none';
+                document.getElementById('dim-bw-text').style.display = 'none';
+            }
+
+            // 5. Draw Impellers
+            const impellersGroup = document.getElementById('impellers-group');
+            impellersGroup.innerHTML = '';
+
+            const d_px = config.d * scale;
+            const b_px = config.b * scale;
+            const clearance_px = config.clearance * scale;
+
+            // Determine multi-stage impeller positions
+            // RULE: The bottom impeller is always anchored at clearance C above the tank bottom.
+            //       Upper stages are stacked upward with a minimum gap of b*1.3.
+            //       If liquid level is too low to submerge all stages, upper stages may rise above
+            //       the liquid surface — but the bottom clearance is NEVER compromised.
+            const n_stages = parseInt(config.n_stage) || 1;
+            let stages_y = [];
+            
+            // Fixed anchor: bottom impeller hub center = tank bottom + clearance + half blade width
+            const y_bottom_target = y_deepest - clearance_px - b_px/2;
+            
+            if (n_stages === 1) {
+                stages_y.push(y_bottom_target);
+            } else {
+                // Ideal gap based on available span between clearance-top and liquid surface
+                const y_top_target = y_liquid + b_px/2;
+                const available_span = y_bottom_target - y_top_target;
+                const ideal_gap = available_span / (n_stages - 1);
+                // Enforce minimum gap to prevent visual overlap/merging of blades
+                const stage_gap = Math.max(b_px * 1.3, ideal_gap);
+                
+                // Stack upward from the fixed bottom anchor
+                for (let i = 0; i < n_stages; i++) {
+                    stages_y.push(y_bottom_target - i * stage_gap);
+                }
+            }
+
+            const y_bottom_impeller = Math.max(...stages_y);
+            document.getElementById('shaft-line').setAttribute('y2', y_bottom_impeller);
+
+            // Draw each stage
+            stages_y.forEach((y_imp, stageIdx) => {
+                const stageG = document.createElementNS('http://www.w3.org/2000/svg', 'g');
+                
+                // Draw Hub (center connector)
+                const hub = document.createElementNS('http://www.w3.org/2000/svg', 'rect');
+                hub.setAttribute('x', cx - 5);
+                hub.setAttribute('y', y_imp - b_px/2);
+                hub.setAttribute('width', 10);
+                hub.setAttribute('height', b_px);
+                hub.setAttribute('fill', '#9ca3af');
+                stageG.appendChild(hub);
+
+                // Draw left & right blades depending on impeller type
+                const blade_w = (d_px - 10) / 2; // width of a single blade from hub
+
+                if (config.impellerType === 'pitched-paddle') {
+                    // Draw pitched blades (angled polygons)
+                    // Left blade
+                    const leftBlade = document.createElementNS('http://www.w3.org/2000/svg', 'polygon');
+                    const x1_l = cx - 5;
+                    const x2_l = cx - 5 - blade_w;
+                    leftBlade.setAttribute('points', `${x1_l},${y_imp - b_px/3} ${x2_l},${y_imp - b_px/2} ${x2_l},${y_imp + b_px/6} ${x1_l},${y_imp + b_px/3}`);
+                    leftBlade.setAttribute('class', 'svg-impeller');
+                    stageG.appendChild(leftBlade);
+
+                    // Right blade
+                    const rightBlade = document.createElementNS('http://www.w3.org/2000/svg', 'polygon');
+                    const x1_r = cx + 5;
+                    const x2_r = cx + 5 + blade_w;
+                    rightBlade.setAttribute('points', `${x1_r},${y_imp - b_px/3} ${x2_r},${y_imp - b_px/6} ${x2_r},${y_imp + b_px/2} ${x1_r},${y_imp + b_px/3}`);
+                    rightBlade.setAttribute('class', 'svg-impeller');
+                    stageG.appendChild(rightBlade);
+
+                } else if (config.impellerType === 'propeller') {
+                    // Curved / teardrop shape for propeller
+                    const leftBlade = document.createElementNS('http://www.w3.org/2000/svg', 'path');
+                    leftBlade.setAttribute('d', `M ${cx-5} ${y_imp} C ${cx - 5 - blade_w/2} ${y_imp - b_px/2}, ${cx - 5 - blade_w} ${y_imp - b_px/4}, ${cx - 5 - blade_w} ${y_imp} C ${cx - 5 - blade_w} ${y_imp + b_px/2}, ${cx - 5 - blade_w/2} ${y_imp}, ${cx-5} ${y_imp} Z`);
+                    leftBlade.setAttribute('class', 'svg-impeller');
+                    stageG.appendChild(leftBlade);
+
+                    const rightBlade = document.createElementNS('http://www.w3.org/2000/svg', 'path');
+                    rightBlade.setAttribute('d', `M ${cx+5} ${y_imp} C ${cx + 5 + blade_w/2} ${y_imp - b_px/2}, ${cx + 5 + blade_w} ${y_imp - b_px/4}, ${cx + 5 + blade_w} ${y_imp} C ${cx + 5 + blade_w} ${y_imp + b_px/2}, ${cx + 5 + blade_w/2} ${y_imp}, ${cx+5} ${y_imp} Z`);
+                    rightBlade.setAttribute('class', 'svg-impeller');
+                    stageG.appendChild(rightBlade);
+
+                } else if (config.impellerType === 'faudler') {
+                    // Curved thin paddle
+                    const leftBlade = document.createElementNS('http://www.w3.org/2000/svg', 'path');
+                    leftBlade.setAttribute('d', `M ${cx-5} ${y_imp - b_px/4} Q ${cx - 5 - blade_w/2} ${y_imp - b_px/2}, ${cx - 5 - blade_w} ${y_imp} L ${cx - 5 - blade_w} ${y_imp + b_px/2} Q ${cx - 5 - blade_w/2} ${y_imp + b_px/4}, ${cx-5} ${y_imp + b_px/4} Z`);
+                    leftBlade.setAttribute('class', 'svg-impeller');
+                    stageG.appendChild(leftBlade);
+
+                    const rightBlade = document.createElementNS('http://www.w3.org/2000/svg', 'path');
+                    rightBlade.setAttribute('d', `M ${cx+5} ${y_imp - b_px/4} Q ${cx + 5 + blade_w/2} ${y_imp - b_px/2}, ${cx + 5 + blade_w} ${y_imp} L ${cx + 5 + blade_w} ${y_imp + b_px/2} Q ${cx + 5 + blade_w/2} ${y_imp + b_px/4}, ${cx+5} ${y_imp + b_px/4} Z`);
+                    rightBlade.setAttribute('class', 'svg-impeller');
+                    stageG.appendChild(rightBlade);
+
+                } else {
+                    // Flat paddle / Flat turbine (Rectangular simple blades)
+                    // Left blade
+                    const leftBlade = document.createElementNS('http://www.w3.org/2000/svg', 'rect');
+                    leftBlade.setAttribute('x', cx - 5 - blade_w);
+                    leftBlade.setAttribute('y', y_imp - b_px/2);
+                    leftBlade.setAttribute('width', blade_w);
+                    leftBlade.setAttribute('height', b_px);
+                    leftBlade.setAttribute('class', 'svg-impeller');
+                    stageG.appendChild(leftBlade);
+
+                    // Right blade
+                    const rightBlade = document.createElementNS('http://www.w3.org/2000/svg', 'rect');
+                    rightBlade.setAttribute('x', cx + 5);
+                    rightBlade.setAttribute('y', y_imp - b_px/2);
+                    rightBlade.setAttribute('width', blade_w);
+                    rightBlade.setAttribute('height', b_px);
+                    rightBlade.setAttribute('class', 'svg-impeller');
+                    stageG.appendChild(rightBlade);
+                }
+
+                // If Flat-turbine (Rushton type), draw disc in the middle
+                if (config.impellerType === 'flat-turbine') {
+                    const disc = document.createElementNS('http://www.w3.org/2000/svg', 'rect');
+                    disc.setAttribute('x', cx - d_px * 0.37);
+                    disc.setAttribute('y', y_imp - 2);
+                    disc.setAttribute('width', d_px * 0.74);
+                    disc.setAttribute('height', 4);
+                    disc.setAttribute('fill', '#d1d5db');
+                    disc.setAttribute('stroke', '#4b5563');
+                    disc.setAttribute('stroke-width', '1');
+                    stageG.appendChild(disc);
+                }
+
+                impellersGroup.appendChild(stageG);
+            });
+
+            // 6. Update Dimension Guides and Arrows
+            // DT
+            document.getElementById('dim-dt-line').setAttribute('y1', y_deepest + 45);
+            document.getElementById('dim-dt-line').setAttribute('y2', y_deepest + 45);
+            document.getElementById('dim-dt-guide-l').setAttribute('d', `M ${lx} ${y_cyl_bottom} L ${lx} ${y_deepest + 55}`);
+            document.getElementById('dim-dt-guide-r').setAttribute('d', `M ${rx} ${y_cyl_bottom} L ${rx} ${y_deepest + 55}`);
+            document.getElementById('dim-dt-text').setAttribute('y', y_deepest + 38);
+            document.getElementById('dim-dt-text').textContent = `DT = ${config.DT.toFixed(3)} m`;
+
+            // H (Liquid height)
+            document.getElementById('dim-h-guide-top').setAttribute('d', `M ${rx} ${y_liquid} L 460 ${y_liquid}`);
+            document.getElementById('dim-h-guide-bottom').setAttribute('d', `M ${cx} ${y_deepest} L 460 ${y_deepest}`);
+            document.getElementById('dim-h-line').setAttribute('y1', y_liquid);
+            document.getElementById('dim-h-line').setAttribute('y2', y_deepest);
+            document.getElementById('dim-h-text').setAttribute('y', (y_liquid + y_deepest) / 2);
+            document.getElementById('dim-h-text').setAttribute('transform', `rotate(90, 455, ${(y_liquid + y_deepest) / 2})`);
+            document.getElementById('dim-h-text').textContent = `H = ${config.H.toFixed(3)} m`;
+
+            // d (Impeller Diameter, draw below bottom impeller)
+            const y_d_line = y_bottom_impeller - b_px - 20;
+            document.getElementById('dim-d-guide-l').setAttribute('d', `M ${cx - d_px/2} ${y_bottom_impeller} L ${cx - d_px/2} ${y_d_line - 10}`);
+            document.getElementById('dim-d-guide-r').setAttribute('d', `M ${cx + d_px/2} ${y_bottom_impeller} L ${cx + d_px/2} ${y_d_line - 10}`);
+            document.getElementById('dim-d-line').setAttribute('x1', cx - d_px/2);
+            document.getElementById('dim-d-line').setAttribute('x2', cx + d_px/2);
+            document.getElementById('dim-d-line').setAttribute('y1', y_d_line);
+            document.getElementById('dim-d-line').setAttribute('y2', y_d_line);
+            document.getElementById('dim-d-text').setAttribute('y', y_d_line - 6);
+            document.getElementById('dim-d-text').textContent = `d = ${config.d.toFixed(3)} m`;
+
+            // C (Clearance, defined from blade bottom edge to vessel bottom)
+            const y_c_start = y_bottom_impeller + b_px/2;
+            document.getElementById('dim-c-line').setAttribute('x1', cx + 25);
+            document.getElementById('dim-c-line').setAttribute('x2', cx + 25);
+            document.getElementById('dim-c-line').setAttribute('y1', y_c_start);
+            document.getElementById('dim-c-line').setAttribute('y2', y_deepest);
+            document.getElementById('dim-c-text').setAttribute('x', cx + 35);
+            document.getElementById('dim-c-text').setAttribute('y', (y_c_start + y_deepest) / 2 + 4);
+            document.getElementById('dim-c-text').textContent = `C = ${config.clearance.toFixed(3)} m`;
+
+            // b (Blade width, draw at bottom impeller right edge)
+            const x_b_line = cx + d_px/2 + 25;
+            document.getElementById('dim-b-line').setAttribute('x1', x_b_line);
+            document.getElementById('dim-b-line').setAttribute('x2', x_b_line);
+            document.getElementById('dim-b-line').setAttribute('y1', y_bottom_impeller - b_px/2);
+            document.getElementById('dim-b-line').setAttribute('y2', y_bottom_impeller + b_px/2);
+            document.getElementById('dim-b-text').setAttribute('x', x_b_line + 10);
+            document.getElementById('dim-b-text').setAttribute('y', y_bottom_impeller + 4);
+            document.getElementById('dim-b-text').textContent = `b = ${config.b.toFixed(3)} m`;
+        }
+    </script>
+</body>
+</html>

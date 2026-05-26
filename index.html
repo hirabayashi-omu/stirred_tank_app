@@ -1,0 +1,421 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>攪拌槽 動力推算＆可視化システム</title>
+    <!-- Google Fonts -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Outfit:wght@300;400;500;600;700&family=Noto+Sans+JP:wght@300;400;500;700&display=swap" rel="stylesheet">
+    <!-- CSS Link -->
+    <link rel="stylesheet" href="style.css">
+    <!-- Chart.js CDN -->
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <!-- html2pdf.js CDN for PDF Report generation -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
+    <!-- Feather Icons for Beautiful UI -->
+    <script src="feather.min.js"></script>
+</head>
+<body>
+    <div class="app-container">
+        <!-- Sidebar: Configuration and Parameters -->
+        <aside class="sidebar">
+            <div class="sidebar-header">
+                <div class="logo">
+                    <i data-feather="shuffle" class="logo-icon"></i>
+                    <span>AgitatorSim</span>
+                </div>
+                <span class="badge">Kamei-Hiraoka</span>
+            </div>
+
+            <div class="scroll-container">
+                <!-- Group Container for Meta Info & Presets -->
+                <div style="border: 1px solid rgba(6, 182, 212, 0.25); background: rgba(6, 182, 212, 0.03); padding: 16px; border-radius: var(--border-radius-md); margin-bottom: 24px; box-shadow: inset 0 0 10px rgba(6, 182, 212, 0.05);">
+                    <!-- Experiment Meta Info -->
+                    <section class="config-section" style="margin-bottom: 20px;">
+                        <h3><i data-feather="file-text"></i> 実験情報</h3>
+                        <div class="input-grid">
+                            <div class="input-group full-width">
+                                <label for="exp-number">実験番号</label>
+                                <input type="text" id="exp-number" value="EXP-001">
+                            </div>
+                            <div class="input-group">
+                                <label for="exp-date">実験日</label>
+                                <input type="date" id="exp-date">
+                            </div>
+                            <div class="input-group">
+                                <label for="exp-author">作成者</label>
+                                <input type="text" id="exp-author" value="攪拌 太郎">
+                            </div>
+                        </div>
+                    </section>
+
+                    <!-- Presets Management -->
+                    <section class="config-section" style="margin-bottom: 0;">
+                        <h3><i data-feather="save"></i> 実験プリセット</h3>
+                        <div class="input-grid" style="grid-template-columns: 1fr; gap: 8px;">
+                            <div class="input-group">
+                                <label for="preset-select">保存済みプリセット</label>
+                                <select id="preset-select" style="font-size: 0.8rem; padding: 6px 10px;">
+                                    <option value="">-- 実験プリセット選択 --</option>
+                                </select>
+                            </div>
+                            <div class="flex-row" style="gap: 8px; margin-top: 4px;">
+                                <button id="save-preset-btn" class="btn btn-secondary" style="flex: 1; padding: 8px 12px; font-size: 0.75rem; width: auto;">
+                                    <i data-feather="plus" style="width:14px; height:14px;"></i> 保存
+                                </button>
+                                <button id="load-preset-btn" class="btn btn-primary" style="flex: 1; padding: 8px 12px; font-size: 0.75rem; width: auto;" disabled>
+                                    <i data-feather="folder-open" style="width:14px; height:14px;"></i> 読込
+                                </button>
+                                <button id="delete-preset-btn" class="btn btn-secondary" style="color:var(--danger-color); border-color:rgba(239,68,68,0.2); padding: 8px; width: auto;" disabled>
+                                    <i data-feather="trash-2" style="width:14px; height:14px;"></i>
+                                </button>
+                            </div>
+                        </div>
+                    </section>
+                </div>
+
+                <!-- Physical quantities -->
+                <section class="config-section">
+                    <h3><i data-feather="settings"></i> 物理量データ</h3>
+                    <div class="input-grid">
+                        <div class="input-group">
+                            <label for="g">重力加速度 g (m/s²)</label>
+                            <input type="number" id="g" value="9.806" step="0.001">
+                        </div>
+                    </div>
+                </section>
+
+                <!-- Liquid Properties -->
+                <section class="config-section">
+                    <h3><i data-feather="droplet"></i> 攪拌液データ</h3>
+                    <div class="input-grid">
+                        <div class="input-group">
+                            <label for="liquid-temp">温度 T (°C)</label>
+                            <input type="number" id="liquid-temp" value="25" step="0.1">
+                        </div>
+                        <div class="input-group">
+                            <label for="rho">液密度 ρ (kg/m³)</label>
+                            <input type="number" id="rho" value="998" step="0.1">
+                        </div>
+                        <div class="input-group">
+                            <label for="mu">液粘度 μ (Pa·s)</label>
+                            <input type="number" id="mu" value="0.417" step="0.001">
+                        </div>
+                        <div class="input-group full-width">
+                            <label for="V-act">液量 V<sub>act</sub> (L) <span style="font-size:0.75rem;opacity:0.6;">※ 0 = 概算値を使用</span></label>
+                            <input type="number" id="V-act" value="0.7295" step="0.0001" min="0">
+                        </div>
+                    </div>
+                </section>
+
+                <!-- Vessel Properties -->
+                <section class="config-section">
+                    <h3><i data-feather="database"></i> 攪拌槽データ</h3>
+                    <div class="input-grid">
+                        <div class="input-group">
+                            <label for="DT">槽径 D<sub>T</sub> (m)</label>
+                            <input type="number" id="DT" value="0.105" step="0.001">
+                        </div>
+                        <div class="input-group">
+                            <label for="H">液高 H (m)</label>
+                            <input type="number" id="H" value="0.093" step="0.001">
+                        </div>
+                        <div class="input-group full-width">
+                            <label for="head-type">鏡板の種類</label>
+                            <select id="head-type">
+                                <option value="flat">平底</option>
+                                <option value="semi-elliptical" selected>半楕円形</option>
+                                <option value="dish">皿型</option>
+                                <option value="hemispherical">全半球形</option>
+                            </select>
+                        </div>
+                    </div>
+                </section>
+
+                <!-- Impeller Properties -->
+                <section class="config-section">
+                    <h3><i data-feather="wind"></i> インペラデータ</h3>
+                    <div class="input-grid">
+                        <div class="input-group full-width">
+                            <label for="impeller-type">種類</label>
+                            <select id="impeller-type">
+                                <option value="pitched-paddle" selected>傾斜パドル</option>
+                                <option value="flat-paddle">平板パドル</option>
+                                <option value="flat-turbine">平板タービン</option>
+                                <option value="propeller">プロペラ</option>
+                                <option value="faudler">ファウドラー</option>
+                            </select>
+                        </div>
+                        <div class="input-group">
+                            <label for="np">羽根枚数 n<sub>p</sub> (枚)</label>
+                            <input type="number" id="np" value="4" step="1" min="2">
+                        </div>
+                        <div class="input-group">
+                            <label for="theta">羽根角度 θ (度)</label>
+                            <input type="number" id="theta" value="45" step="0.1" min="0" max="90">
+                        </div>
+                        <div class="input-group">
+                            <label for="d">翼径 d (m)</label>
+                            <input type="number" id="d" value="0.060" step="0.001">
+                        </div>
+                        <div class="input-group">
+                            <label for="b">翼幅 b (m)</label>
+                            <input type="number" id="b" value="0.020" step="0.001">
+                        </div>
+                        <div class="input-group">
+                            <label for="clearance">クリアランス C (m)</label>
+                            <input type="number" id="clearance" value="0.020" step="0.001">
+                        </div>
+                        <div class="input-group">
+                            <label for="n_stage">翼段数 N<sub>stage</sub></label>
+                            <input type="number" id="n_stage" value="4" step="1" min="1">
+                        </div>
+                    </div>
+                </section>
+
+                <!-- Baffle Properties -->
+                <section class="config-section">
+                    <h3><i data-feather="columns"></i> 邪魔板データ</h3>
+                    <div class="input-grid">
+                        <div class="input-group full-width checkbox-group">
+                            <input type="checkbox" id="baffle-active" checked>
+                            <label for="baffle-active">邪魔板あり</label>
+                        </div>
+                        <div class="input-group">
+                            <label for="nB">邪魔板枚数 n<sub>B</sub></label>
+                            <input type="number" id="nB" value="1" step="1" min="0">
+                        </div>
+                        <div class="input-group">
+                            <label for="Bw">邪魔板幅 B<sub>w</sub> (m)</label>
+                            <input type="number" id="Bw" value="0.014" step="0.001">
+                        </div>
+                    </div>
+                </section>
+
+
+            </div>
+
+            <div class="sidebar-footer">
+                <button id="load-sample-btn" class="btn btn-secondary">
+                    <i data-feather="database"></i> サンプル読込
+                </button>
+            </div>
+        </aside>
+
+        <!-- Main Content Area -->
+        <main class="main-content">
+            <header class="top-nav">
+                <h1>攪拌槽 動力特性解析システム</h1>
+                <div class="actions">
+                    <a href="formula.html" class="btn btn-secondary">
+                        <i data-feather="book-open"></i> 推算式の説明
+                    </a>
+                    <a href="diagram.html" class="btn btn-secondary" target="agitator_diagram" onclick="this.href='diagram.html?t=' + Date.now()">
+                        <i data-feather="image"></i> 槽模式図
+                    </a>
+                    <button id="export-pdf-btn" class="btn btn-primary">
+                        <i data-feather="file-text"></i> PDFレポート作成
+                    </button>
+                    <button id="export-csv-btn" class="btn btn-secondary">
+                        <i data-feather="download"></i> CSVエクスポート
+                    </button>
+                    <button id="import-csv-btn" class="btn btn-secondary" onclick="document.getElementById('csv-file-input').click()">
+                        <i data-feather="upload"></i> CSVインポート
+                    </button>
+                    <input type="file" id="csv-file-input" accept=".csv" style="display: none;">
+                </div>
+            </header>
+
+            <div class="content-grid">
+                <!-- Chart Card -->
+                <div class="card chart-card">
+                    <div class="card-header">
+                        <h2><i data-feather="trending-up"></i> ラシュトン線図 (Rushton Plot)</h2>
+                        <div class="flex-row" style="gap: 8px; align-items: center;">
+                            <label style="font-size: 0.75rem; color: var(--text-secondary);">Np表示範囲: </label>
+                            <select id="chart-ymin" style="background: var(--bg-tertiary); border: 1px solid var(--card-border); color: var(--text-primary); padding: 4px 8px; border-radius: var(--border-radius-sm); font-size: 0.75rem; cursor: pointer;">
+                                <option value="auto" selected>自動</option>
+                                <option value="0.001">0.001</option>
+                                <option value="0.01">0.01</option>
+                                <option value="0.1">0.1</option>
+                                <option value="1">1</option>
+                            </select>
+                            <span style="font-size: 0.75rem; color: var(--text-muted);">〜</span>
+                            <select id="chart-ymax" style="background: var(--bg-tertiary); border: 1px solid var(--card-border); color: var(--text-primary); padding: 4px 8px; border-radius: var(--border-radius-sm); font-size: 0.75rem; cursor: pointer;">
+                                <option value="auto" selected>自動</option>
+                                <option value="10">10</option>
+                                <option value="100">100</option>
+                                <option value="1000">1000</option>
+                                <option value="10000">10000</option>
+                            </select>
+                        </div>
+                        <span class="info-tooltip" title="Re vs Np の両対数プロット。実線は推算式、点は実験データです。">
+                            <i data-feather="info"></i>
+                        </span>
+                    </div>
+                    <div class="chart-container">
+                        <canvas id="rushtonChart"></canvas>
+                    </div>
+                </div>
+
+                <!-- Summary Cards / Calculated Parameters -->
+                <div class="card results-card">
+                    <div class="card-header">
+                        <h2><i data-feather="cpu"></i> 亀井・平岡・加藤 推算中間変数</h2>
+                    </div>
+                    <div class="results-table-container">
+                        <table class="results-table">
+                            <thead>
+                                <tr>
+                                    <th>変数</th>
+                                    <th>定義</th>
+                                    <th>推算値</th>
+                                </tr>
+                            </thead>
+                            <tbody id="calculated-vars-body">
+                                <!-- Computed via JS -->
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+
+                <!-- Experimental Data Sheet -->
+                <div class="card data-card full-width">
+                    <div class="card-header">
+                        <h2><i data-feather="clipboard"></i> 実験値算出シート</h2>
+                        <div class="data-actions">
+                            <button id="add-block-btn" class="btn btn-primary">
+                                <i data-feather="plus"></i> 測定ブロック追加
+                            </button>
+                        </div>
+                    </div>
+                    
+                    <div class="blocks-container" id="blocks-container">
+                        <!-- Dynamic blocks are added here -->
+                    </div>
+                </div>
+            </div>
+        </main>
+    </div>
+
+    <!-- Notification system -->
+    <div id="toast" class="toast"></div>
+
+    <!-- PDF Report Hidden Template -->
+    <div id="pdf-report-template" style="display: none;">
+        <div class="pdf-page" style="font-family: 'Noto Sans JP', 'Inter', sans-serif; color: #111827; background: #ffffff; padding: 30px 40px; width: 700px; margin: 0 auto; box-sizing: border-box;">
+            <!-- Report Header -->
+            <div style="border-bottom: 3px solid #06b6d4; padding-bottom: 12px; margin-bottom: 24px; display: flex; justify-content: space-between; align-items: flex-end; gap: 20px;">
+                <div style="flex-grow: 1;">
+                    <h1 style="font-size: 22px; font-weight: 700; color: #111827; margin: 0; font-family: 'Outfit', sans-serif; white-space: nowrap;">攪拌槽 動力特性実験レポート</h1>
+                    <p style="font-size: 10px; color: #4b5563; margin: 4px 0 0 0;">Agitator Power Characteristics Simulation & Experimental Report</p>
+                </div>
+                <div style="text-align: right; font-size: 11px; color: #374151; line-height: 1.5; flex-shrink: 0; min-width: 180px;">
+                    <div><strong>実験番号:</strong> <span id="pdf-exp-number" style="border-bottom: 1px solid #d1d5db; padding-bottom: 1px; display: inline-block; min-width: 100px; text-align: left;"></span></div>
+                    <div><strong>実験日:</strong> <span id="pdf-exp-date" style="border-bottom: 1px solid #d1d5db; padding-bottom: 1px; display: inline-block; min-width: 100px; text-align: left;"></span></div>
+                    <div><strong>作成者:</strong> <span id="pdf-exp-author" style="border-bottom: 1px solid #d1d5db; padding-bottom: 1px; display: inline-block; min-width: 100px; text-align: left;"></span></div>
+                </div>
+            </div>
+
+            <!-- Configuration parameters -->
+            <h2 style="font-size: 13px; font-weight: 600; color: #06b6d4; border-bottom: 1px solid #e5e7eb; padding-bottom: 6px; margin: 0 0 10px 0;">■ 実験条件・攪拌槽仕様</h2>
+            <div style="display: flex; gap: 16px; margin-bottom: 20px; background: #f9fafb; padding: 12px; border-radius: 6px; border: 1px solid #e5e7eb; align-items: stretch;">
+                <!-- Left: Text parameters -->
+                <div style="flex: 2; display: grid; grid-template-columns: repeat(2, 1fr); gap: 10px; font-size: 9px; line-height: 1.4;">
+                    <div><strong>液物性 / 環境:</strong><br>
+                        ・重力加速度: <span id="pdf-val-g"></span> m/s²<br>
+                        ・液温度: <span id="pdf-val-temp"></span> °C<br>
+                        ・液密度 ρ: <span id="pdf-val-rho"></span> kg/m³<br>
+                        ・液粘度 μ: <span id="pdf-val-mu"></span> Pa·s
+                    </div>
+                    <div><strong>邪魔板条件:</strong><br>
+                        ・邪魔板の有無: <span id="pdf-val-baffle"></span><br>
+                        ・邪魔板枚数: <span id="pdf-val-nb"></span> 枚<br>
+                        ・邪魔板幅 Bw: <span id="pdf-val-bw"></span> m
+                    </div>
+                    <div style="grid-column: span 2; border-top: 1px solid #e5e7eb; padding-top: 6px; margin-top: 2px;">
+                        <strong>攪拌槽・インペラ:</strong><br>
+                        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 6px;">
+                            <div>
+                                ・槽内径 DT: <span id="pdf-val-dt"></span> m<br>
+                                ・液深 H: <span id="pdf-val-h"></span> m (底: <span id="pdf-val-head"></span>)<br>
+                                ・翼段数: <span id="pdf-val-stages"></span> 段
+                            </div>
+                            <div>
+                                ・インペラ種: <span id="pdf-val-impeller"></span><br>
+                                ・羽根枚数: <span id="pdf-val-np"></span> 枚 (角度: <span id="pdf-val-theta"></span>°)<br>
+                                ・翼径 d: <span id="pdf-val-d"></span> m / 翼幅 b: <span id="pdf-val-b"></span> m
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <!-- Right: Vessel schematic diagram Image & Hidden Canvas -->
+                <div style="flex: 1; border-left: 1px solid #e5e7eb; padding-left: 16px; display: flex; justify-content: center; align-items: center; background: #ffffff;">
+                    <img id="pdf-vessel-img" style="width: 100%; height: 180px; object-fit: contain; display: block;">
+                    <canvas id="pdfVesselCanvas" width="500" height="600" style="display: none;"></canvas>
+                </div>
+            </div>
+
+            <!-- Rushton Plot Graph -->
+            <h2 style="font-size: 13px; font-weight: 600; color: #06b6d4; border-bottom: 1px solid #e5e7eb; padding-bottom: 6px; margin: 0 0 10px 0;">■ ラシュトン線図 (Rushton Plot)</h2>
+            <div style="text-align: center; margin-bottom: 24px; background: #ffffff; padding: 16px; border-radius: 8px; border: 1px solid #e5e7eb; position: relative;">
+                <img id="pdf-chart-img" style="max-width: 100%; height: 280px; object-fit: contain; display: block; margin: 0 auto;">
+                <!-- Hidden Canvas wrapper for rendering light-mode graph -->
+                <div style="width: 0; height: 0; overflow: hidden; opacity: 0; position: absolute; left: 0; top: 0;">
+                    <canvas id="pdfChartCanvas" width="600" height="350"></canvas>
+                </div>
+            </div>
+
+            <!-- Page Break -->
+            <div class="html2pdf__page-break"></div>
+
+            <!-- Calculated Intermediate Variables Table -->
+            <h2 style="font-size: 13px; font-weight: 600; color: #06b6d4; border-bottom: 1px solid #e5e7eb; padding-bottom: 6px; margin: 20px 0 10px 0;">■ 亀井・平岡・加藤 推算中間変数</h2>
+            <table style="width: 100%; border-collapse: collapse; font-size: 9px; margin-bottom: 20px;">
+                <thead>
+                    <tr style="background: #f3f4f6; border-bottom: 2px solid #e5e7eb; text-align: center; font-weight: 600;">
+                        <th style="padding: 5px; border: 1px solid #e5e7eb; text-align: left;">変数</th>
+                        <th style="padding: 5px; border: 1px solid #e5e7eb; text-align: left;">定義</th>
+                        <th style="padding: 5px; border: 1px solid #e5e7eb; text-align: right; width: 120px;">推算値</th>
+                    </tr>
+                </thead>
+                <tbody id="pdf-calculated-vars-body" style="text-align: left;">
+                    <!-- Dynamically populated via JS -->
+                </tbody>
+            </table>
+
+            <!-- Experimental Results Table -->
+            <h2 style="font-size: 13px; font-weight: 600; color: #06b6d4; border-bottom: 1px solid #e5e7eb; padding-bottom: 6px; margin: 20px 0 10px 0;">■ 実験結果データ（測定ブロック平均値）</h2>
+            <table style="width: 100%; border-collapse: collapse; font-size: 10px; margin-bottom: 20px;">
+                <thead>
+                    <tr style="background: #f3f4f6; border-bottom: 2px solid #e5e7eb; text-align: center; font-weight: 600;">
+                        <th style="padding: 6px; border: 1px solid #e5e7eb; text-align: left;">測定ブロック名</th>
+                        <th style="padding: 6px; border: 1px solid #e5e7eb;">平均回転数 N (rpm)</th>
+                        <th style="padding: 6px; border: 1px solid #e5e7eb;">攪拌所要動力 P (W)</th>
+                        <th style="padding: 6px; border: 1px solid #e5e7eb;">正味動力 Pv (W/m³)</th>
+                        <th style="padding: 6px; border: 1px solid #e5e7eb;">レイノルズ数 Re [-]</th>
+                        <th style="padding: 6px; border: 1px solid #e5e7eb;">動力数 Np [-]</th>
+                        <th style="padding: 6px; border: 1px solid #e5e7eb;">フルード数 Fr [-]</th>
+                    </tr>
+                </thead>
+                <tbody id="pdf-results-tbody" style="text-align: center;">
+                    <!-- Dynamically populated via JS -->
+                </tbody>
+            </table>
+
+            <!-- Report Footer -->
+            <div style="border-top: 1px solid #e5e7eb; padding-top: 12px; text-align: center; font-size: 9px; color: #6b7280; margin-top: 40px;">
+                Report generated by AgitatorSim System.
+            </div>
+        </div>
+    </div>
+
+    <script src="app.js?v=20260526_2015"></script>
+    <script>
+        // Initialize Feather Icons
+        feather.replace();
+    </script>
+</body>
+</html>
