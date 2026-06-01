@@ -146,6 +146,10 @@ body {
     grid-column: span 2;
 }
 
+.input-grid > .full-width {
+    grid-column: span 2;
+}
+
 .input-group label {
     font-size: 0.75rem;
     color: var(--text-secondary);

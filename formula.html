@@ -199,7 +199,7 @@
                 </p>
 
                 <div class="formula-block">
-                    $$Np_0 = \left( \frac{1.2 \, \pi^4 \, \beta^2}{V_d} \right) \cdot f$$
+                    $$Np_0 = \left( \frac{1.2 \, \pi^4 \, \beta^2}{V_d} \right) \cdot f \cdot N_{stage}$$
                 </div>
                 <p>ここで、各変数および摩擦係数 $f$ は以下の補助関数によって決定されます：</p>
                 
@@ -242,6 +242,10 @@
                     <div class="parameter-item">
                         <span class="parameter-symbol">$f_\infty$</span>
                         <span>$\displaystyle f_\infty = 0.0151 \left( \frac{d}{D_T} \right) C_t^{0.308}$ （極限摩擦係数）</span>
+                    </div>
+                    <div class="parameter-item">
+                        <span class="parameter-symbol">$N_{stage}$</span>
+                        <span>インペラ段数（多段翼の場合は動力が段数倍されます）</span>
                     </div>
                 </div>
 
@@ -366,12 +370,309 @@
                 <p>
                     すなわち、邪魔板ありとして計算された $Np_{baffled}$ が、邪魔板なしの動力数 $Np_0$ よりも小さくなった場合は、強制的に下限値として <span class="highlight-text">$Np = Np_0$</span> を採用します。これにより、層流域において $Np$ 曲線が $Np_0$（Re数の増加に対して右肩下がりの対数直線）と完全に一致し、物理的に正しい挙動になります。
                 </p>
+
+                <div style="margin-top: 32px; padding: 16px; background: rgba(255,255,255,0.05); border-radius: 8px; font-size: 0.85rem; border: 1px solid var(--card-border);">
+                    <div style="font-weight: 600; color: var(--text-primary); margin-bottom: 8px;"><i data-feather="book-open" style="width: 14px; height: 14px; vertical-align: middle;"></i> 原著論文（参考文献）</div>
+                    <ul style="color: var(--text-secondary); margin-left: 20px; line-height: 1.6;">
+                        <li style="margin-bottom: 8px;">
+                            亀井 登, 平岡 節郎, 加藤 禎人, ら (1995). 
+                            <br>球形および円筒槽におけるパドル翼の撹拌所要動力の相関 (Power Correlation for Paddle Impellers in Spherical and Cylindrical Agitated Vessels). <i>化学工学論文集 (Kagaku Kogaku Ronbunshu)</i>, 21(1), 41-48. 
+                            <a href="https://doi.org/10.1252/kakoronbunshu.21.41" target="_blank" style="color: var(--pink-accent);">[DOIリンク]</a>
+                        </li>
+                        <li>
+                            平岡 節郎, 亀井 登, 加藤 禎人, ら (1997). 
+                            <br>邪魔板なし円筒槽における傾斜パドル翼の撹拌所要動力 (Power Consumption of Pitched Paddle Impellers in an Unbaffled Cylindrical Vessel). <i>化学工学論文集</i>, 23(6), 969-976. 
+                            <a href="https://doi.org/10.1252/kakoronbunshu.23.969" target="_blank" style="color: var(--pink-accent);">[DOIリンク]</a>
+                        </li>
+                    </ul>
+                </div>
             </div>
+
+            <!-- Card 6: Metzner-Otto Method -->
+            <div class="formula-card">
+                <div class="formula-title">
+                    <i data-feather="repeat"></i>
+                    <span>6. 非ニュートン流体の取り扱い（Metzner–Otto 法）</span>
+                </div>
+                <p>
+                    非ニュートン流体（擬塑性流体、ビンガム流体など）では、せん断速度によって見かけの粘度 $\mu_{eff}$ が変化します。攪拌槽内のせん断速度は場所によって大きく異なりますが、Metzner と Otto は、インペラ近傍の「平均的なせん断速度」 $\dot{\gamma}_{avg}$ がインペラの回転速度 $n$ (または $N$ rpm) に比例すると仮定しました。
+                </p>
+
+                <div class="formula-block">
+                    $$\dot{\gamma}_{avg} = k_s \cdot n$$
+                </div>
+                
+                <p>
+                    ここで $k_s$ はインペラの幾何学的形状に依存する無次元定数（Metzner–Otto 定数）です。この平均せん断速度における見かけ粘度 $\mu_{eff}$ を用いることで、非ニュートン流体でもニュートン流体と同じ動力曲線（Np-Re曲線）を適用できるとしました。
+                </p>
+                <div class="formula-block">
+                    $$\text{有効レイノルズ数 } Re_{eff} = \frac{\rho \, n \, d^2}{\mu_{eff}}$$
+                </div>
+
+                <h3 style="font-size: 1rem; color: var(--text-primary); margin: 24px 0 12px 0;">各レオロジーモデルにおける $\mu_{eff}$ の計算</h3>
+                <p>本シミュレーターでは、E型粘度計アプリの解析結果（モデルとパラメータ）を読み込み、以下の式で $\mu_{eff}$ を算出します。</p>
+
+                <div class="formula-block">
+                    $$\begin{aligned}
+                    &\text{・Power-law (べき乗則) モデル:} \\
+                    &\quad \mu_{eff} = K \cdot (\dot{\gamma}_{avg})^{n-1} \\
+                    &\text{・Bingham モデル:} \\
+                    &\quad \mu_{eff} = \frac{\tau_y}{\dot{\gamma}_{avg}} + \eta_p \\
+                    &\text{・Herschel-Bulkley モデル:} \\
+                    &\quad \mu_{eff} = \frac{\tau_y}{\dot{\gamma}_{avg}} + K \cdot (\dot{\gamma}_{avg})^{n-1}
+                    \end{aligned}$$
+                </div>
+                <h3 style="font-size: 1rem; color: var(--text-primary); margin: 32px 0 12px 0;">代表的な $k_s$ 値（Metzner-Otto 定数）</h3>
+                <p>
+                    $k_s$ は撹拌翼の形状に強く依存する定数です。様々な研究者により、代表的な翼について以下の定数値が提案されています。
+                </p>
+                
+                <table style="width: 100%; border-collapse: collapse; margin-top: 16px; margin-bottom: 24px; font-size: 0.9rem; text-align: left;">
+                    <thead>
+                        <tr style="border-bottom: 2px solid var(--border-color); color: var(--text-primary);">
+                            <th style="padding: 12px 8px;">撹拌翼の種類</th>
+                            <th style="padding: 12px 8px;">代表的な $k_s$ 値</th>
+                            <th style="padding: 12px 8px;">主な出典・備考</th>
+                        </tr>
+                    </thead>
+                    <tbody style="color: var(--text-secondary);">
+                        <tr style="border-bottom: 1px solid var(--border-color);">
+                            <td style="padding: 12px 8px;">平羽根タービン (Rushton)</td>
+                            <td style="padding: 12px 8px;">11.0 ～ 11.5</td>
+                            <td style="padding: 12px 8px;">Metzner & Otto (1957)</td>
+                        </tr>
+                        <tr style="border-bottom: 1px solid var(--border-color);">
+                            <td style="padding: 12px 8px;">傾斜パドル翼 (Pitched Blade)</td>
+                            <td style="padding: 12px 8px;">11.0</td>
+                            <td style="padding: 12px 8px;">一般的に 10〜13 の範囲とされる</td>
+                        </tr>
+                        <tr style="border-bottom: 1px solid var(--border-color);">
+                            <td style="padding: 12px 8px;">プロペラ翼 / 高効率翼</td>
+                            <td style="padding: 12px 8px;">10.0</td>
+                            <td style="padding: 12px 8px;">軸流を主体とする翼</td>
+                        </tr>
+                        <tr style="border-bottom: 1px solid var(--border-color);">
+                            <td style="padding: 12px 8px;">ファウドラー翼 / 後退翼 (Retreat Curve)</td>
+                            <td style="padding: 12px 8px;">11.0 ～ 11.5</td>
+                            <td style="padding: 12px 8px;">一般に平羽根等と同等（11.5前後）の推奨値が採用される<br><span style="font-size: 0.8em; color: var(--text-muted);">(cf. Nagata(1975), 撹拌機メーカー標準設計)</span></td>
+                        </tr>
+                        <tr style="border-bottom: 1px solid var(--border-color);">
+                            <td style="padding: 12px 8px;">アンカー翼 (Anchor)</td>
+                            <td style="padding: 12px 8px;">24.0 ～ 25.0</td>
+                            <td style="padding: 12px 8px;">Calderbank & Moo-Young (1959)</td>
+                        </tr>
+                        <tr style="border-bottom: 1px solid var(--border-color);">
+                            <td style="padding: 12px 8px;">ヘリカルリボン (Helical Ribbon)</td>
+                            <td style="padding: 12px 8px;">29.0 ～ 30.0</td>
+                            <td style="padding: 12px 8px;">近接翼・高粘度用</td>
+                        </tr>
+                    </tbody>
+                </table>
+
+                <div style="margin-top: 24px; padding: 16px; background: rgba(255,255,255,0.05); border-radius: 8px; font-size: 0.85rem; border: 1px solid var(--card-border);">
+                    <div style="font-weight: 600; color: var(--text-primary); margin-bottom: 8px;"><i data-feather="book-open" style="width: 14px; height: 14px; vertical-align: middle;"></i> 原著論文（参考文献）</div>
+                    <ul style="color: var(--text-secondary); margin-left: 20px; line-height: 1.6;">
+                        <li style="margin-bottom: 8px;">
+                            Metzner, A. B., & Otto, R. E. (1957). 
+                            <br>Agitation of non-Newtonian fluids. <i>AIChE Journal</i>, 3(1), 3-10. 
+                            <a href="https://doi.org/10.1002/aic.690030103" target="_blank" style="color: var(--pink-accent);">[DOIリンク]</a>
+                        </li>
+                        <li>
+                            Calderbank, P. H., & Moo-Young, M. B. (1959). 
+                            <br>The prediction of power consumption in the agitation of non-Newtonian fluids. <i>Transactions of the Institution of Chemical Engineers</i>, 37, 26-33.
+                        </li>
+                    </ul>
+                </div>
+            </div>
+
+            <!-- Card 7: Cavern Models -->
+            <div class="formula-card">
+                <div class="formula-title">
+                    <i data-feather="target"></i>
+                    <span>7. 降伏応力流体におけるキャバーン（流動領域）径の推算</span>
+                </div>
+                <p>
+                    ビンガム流体やキャッソン流体など、降伏応力 $\tau_y$ を持つ非ニュートン流体を攪拌する場合、インペラ周辺のせん断応力が降伏応力を上回る領域でのみ流動が発生し、それ以外の壁際などの領域では流体が静止したままとなる「キャバーン（Cavern：洞窟状の死水域）」が形成されます。<br>
+                    キャバーン径 $D_c$ がタンク径 $D_T$ に達しているかどうかは、スケールアップにおいてタンク全体が混合されているかを判断する重要な基準となります。
+                </p>
+
+                <h3 style="font-size: 1rem; color: var(--text-primary); margin: 24px 0 12px 0;">Elson の球形モデル (Spherical Model)</h3>
+                <p>
+                    キャバーンがインペラを中心に「球状」に形成されると仮定した基本モデル（Elson et al., 1986）です。
+                </p>
+                <div class="formula-block">
+                    $$\left( \frac{D_c}{D} \right)^3 = \frac{4 \, N_p}{\pi^3} \left( \frac{\rho \, n^2 D^2}{\tau_y} \right)$$
+                </div>
+
+                <h3 style="font-size: 1rem; color: var(--text-primary); margin: 24px 0 12px 0;">Elson の円筒形モデル (Cylindrical Model)</h3>
+                <p>
+                    ラシュトンタービンのようなラジアル流（横方向への吐出）が強いインペラにおいて、キャバーンが「円筒状」に形成されると仮定したモデルです。一般に球形モデルよりも少し大きく（厳しく）見積もられます。
+                </p>
+                <div class="formula-block">
+                    $$\left( \frac{D_c}{D} \right)^3 = \frac{1.36 \, N_p}{\pi^2} \left( \frac{\rho \, n^2 D^2}{\tau_y} \right)$$
+                </div>
+
+                <h3 style="font-size: 1rem; color: var(--text-primary); margin: 24px 0 12px 0;">Amanullah のトーラス形モデル (Torus Model)</h3>
+                <p>
+                    傾斜パドル翼やプロペラなどの軸流翼（下向き推力を持つインペラ）では、キャバーンが「ドーナツ状（トーラス形）」になることが知られています（<a href="https://doi.org/10.1016/S0009-2509(97)00335-5" target="_blank" style="color: var(--pink-accent); text-decoration: underline;">Amanullah et al., 1998</a>）。インペラの接線力と軸方向推力の合力を考慮するため計算が複雑になりますが、高精度な推算が可能です。本シミュレーターでは、簡易評価としてElsonモデルを汎用的に用いています。
+                </p>
+
+                <div style="margin-top: 32px; padding: 16px; background: rgba(255,255,255,0.05); border-radius: 8px; font-size: 0.85rem; border: 1px solid var(--card-border);">
+                    <div style="font-weight: 600; color: var(--text-primary); margin-bottom: 8px;"><i data-feather="book-open" style="width: 14px; height: 14px; vertical-align: middle;"></i> 原著論文（参考文献）</div>
+                    <ul style="color: var(--text-secondary); margin-left: 20px; line-height: 1.6;">
+                        <li style="margin-bottom: 8px;">
+                            Elson, T. P., Cheesman, D. J., & Nienow, A. W. (1986). 
+                            <br>X-ray studies of cavern sizes and mixing performance with fluids possessing a yield stress. <i>Chemical Engineering Science</i>, 41(10), 2555-2562. 
+                            <a href="https://doi.org/10.1016/0009-2509(86)80039-0" target="_blank" style="color: var(--pink-accent);">[DOIリンク]</a>
+                        </li>
+                        <li>
+                            Amanullah, A., Hjorth, S. A., & Nienow, A. W. (1998). 
+                            <br>A new mathematical model to predict cavern diameters in highly shear thinning, power law liquids using axial flow impellers. <i>Chemical Engineering Science</i>, 53(3), 455-469. 
+                            <a href="https://doi.org/10.1016/S0009-2509(97)00335-5" target="_blank" style="color: var(--pink-accent);">[DOIリンク]</a>
+                        </li>
+                    </ul>
+                </div>
+
+                <div class="parameter-list" style="margin-top: 32px;">
+                    <div class="parameter-item">
+                        <span class="parameter-symbol">$D_c$</span>
+                        <span>キャバーン径 [m]</span>
+                    </div>
+                    <div class="parameter-item">
+                        <span class="parameter-symbol">$D$</span>
+                        <span>インペラ翼径 [m]</span>
+                    </div>
+                    <div class="parameter-item">
+                        <span class="parameter-symbol">$\tau_y$</span>
+                        <span>降伏応力 [Pa]</span>
+                    </div>
+                </div>
+            </div>
+
 
             <div style="text-align: center; margin-bottom: 40px;">
                 <a href="index.html" class="btn btn-secondary" style="width: auto; display: inline-flex;">
                     <i data-feather="arrow-left"></i> シミュレーターへ戻る
                 </a>
+            </div>
+
+            <!-- Card 8: Zwietering Solid-Liquid Correlation -->
+            <div class="formula-card">
+                <div class="formula-title">
+                    <i data-feather="box"></i>
+                    <span>8. 固液攪拌における完全浮遊撹拌速度の推算（Zwietering の式）</span>
+                </div>
+                <p>
+                    固液攪拌システムにおいて、槽底に沈降している固体粒子が完全に底から離れて浮遊する状態（完全離底懸浮状態、Just Suspended State）となる臨界撹拌速度 $N_{js}$ は、Zwietering (1958) によって提案された以下の半経験式を用いて評価されます。
+                </p>
+                
+                <div class="formula-block">
+                    $$N_{js} = S \cdot \nu^{0.1} \cdot d_p^{0.2} \cdot \left( g \, \frac{\rho_S - \rho_L}{\rho_L} \right)^{0.45} \cdot X^{0.13} \cdot d^{-0.85}$$
+                </div>
+
+                <div class="parameter-list">
+                    <div class="parameter-item">
+                        <span class="parameter-symbol">$N_{js}$</span>
+                        <span>完全浮遊限界撹拌速度 [1/s]（毎分回転数 $N_{js} \text{[rpm]} = 60 \cdot N_{js} \text{[1/s]}$）</span>
+                    </div>
+                    <div class="parameter-item">
+                        <span class="parameter-symbol">$S$</span>
+                        <span>幾何学的形状因子 [-]（撹拌槽内径・翼径・クリアランス・翼種・槽底形状に依存する定数）</span>
+                    </div>
+                    <div class="parameter-item">
+                        <span class="parameter-symbol">$\nu$</span>
+                        <span>液体の動粘度 [m²/s]（$= \mu / \rho_L$、非ニュートン流体では $\mu_{eff} / \rho_L$）</span>
+                    </div>
+                    <div class="parameter-item">
+                        <span class="parameter-symbol">$d_p$</span>
+                        <span>固体粒子の代表粒子径 [m]</span>
+                    </div>
+                    <div class="parameter-item">
+                        <span class="parameter-symbol">$g$</span>
+                        <span>重力加速度 [m/s²]</span>
+                    </div>
+                    <div class="parameter-item">
+                        <span class="parameter-symbol">$\rho_S$</span>
+                        <span>固体粒子の真密度 [kg/m³]</span>
+                    </div>
+                    <div class="parameter-item">
+                        <span class="parameter-symbol">$\rho_L$</span>
+                        <span>液体の密度 [kg/m³]</span>
+                    </div>
+                    <div class="parameter-item">
+                        <span class="parameter-symbol">$X$</span>
+                        <span>固体粒子の対液重量百分率 [wt%]（$= (\text{固体重量} / \text{液体重量}) \times 100$）</span>
+                    </div>
+                    <div class="parameter-item">
+                        <span class="parameter-symbol">$d$</span>
+                        <span>撹拌翼径 [m]</span>
+                    </div>
+                </div>
+
+                <h3 style="font-size: 1rem; color: var(--text-primary); margin: 24px 0 12px 0;">幾何学的形状因子 $S$ の文献値</h3>
+                <p>
+                    Zwietering の式において最も重要なパラメータである形状因子 $S$ は、標準的な配置（翼径比 $d/D_T = 1/3$、底面クリアランス比 $C/D_T = 1/4$）において、以下の値が知られています。本シミュレーターの自動マッピング機能では、この値を底鏡板の形式（平底 / 皿底・楕円底等）と翼種に応じて自動的に適用します。
+                </p>
+
+                <table style="width: 100%; border-collapse: collapse; margin-top: 16px; margin-bottom: 24px; font-size: 0.9rem; text-align: left;">
+                    <thead>
+                        <tr style="border-bottom: 2px solid var(--border-color); color: var(--text-primary);">
+                            <th style="padding: 12px 8px;">撹拌翼形状</th>
+                            <th style="padding: 12px 8px;">平底槽底 ($S$)</th>
+                            <th style="padding: 12px 8px;">皿形・楕円槽底 ($S$)</th>
+                        </tr>
+                    </thead>
+                    <tbody style="color: var(--text-secondary);">
+                        <tr style="border-bottom: 1px solid var(--border-color);">
+                            <td style="padding: 12px 8px;">平板タービン翼 (Flat Turbine)</td>
+                            <td style="padding: 12px 8px;">7.0</td>
+                            <td style="padding: 12px 8px;">5.2</td>
+                        </tr>
+                        <tr style="border-bottom: 1px solid var(--border-color);">
+                            <td style="padding: 12px 8px;">平板パドル翼 (Flat Paddle)</td>
+                            <td style="padding: 12px 8px;">7.5</td>
+                            <td style="padding: 12px 8px;">5.6</td>
+                        </tr>
+                        <tr style="border-bottom: 1px solid var(--border-color);">
+                            <td style="padding: 12px 8px;">傾斜パドル翼 (Pitched Paddle)</td>
+                            <td style="padding: 12px 8px;">5.0</td>
+                            <td style="padding: 12px 8px;">4.6</td>
+                        </tr>
+                        <tr style="border-bottom: 1px solid var(--border-color);">
+                            <td style="padding: 12px 8px;">プロペラ翼 (Propeller)</td>
+                            <td style="padding: 12px 8px;">9.0</td>
+                            <td style="padding: 12px 8px;">8.2</td>
+                        </tr>
+                        <tr style="border-bottom: 1px solid var(--border-color);">
+                            <td style="padding: 12px 8px;">アンカー翼 (Anchor)</td>
+                            <td style="padding: 12px 8px;">7.0</td>
+                            <td style="padding: 12px 8px;">7.0</td>
+                        </tr>
+                    </tbody>
+                </table>
+
+                <h3 style="font-size: 1rem; color: var(--text-primary); margin: 24px 0 12px 0;">非ニュートン流体に対する陰関数の反復収束計算法</h3>
+                <p>
+                    非ニュートン流体では、見かけの粘度 $\mu_{eff}$ が撹拌速度の関数（$\mu_{eff} = f(n)$）となるため、Zwietering の式は明示的（explicit）に解くことができません。
+                    本シミュレーターでは、以下の不動点反復法（Fixed-Point Iteration）を用いて、陰関数形式の方程式を自己無撞着（Self-Consistent）に解いています。
+                </p>
+                <div class="formula-block">
+                    $$n_{js}^{(k+1)} = S \cdot \left( \frac{\mu_{eff}(n_{js}^{(k)})}{\rho_L} \right)^{0.1} \cdot d_p^{0.2} \cdot \left( g \, \frac{\rho_S - \rho_L}{\rho_L} \right)^{0.45} \cdot X^{0.13} \cdot d^{-0.85}$$
+                </div>
+                <p>
+                    この計算において、反復するごとに粘度が更新され、通常は 5〜10 回以内で極めて高精度に収束します。
+                </p>
+
+                <div style="margin-top: 24px; padding: 16px; background: rgba(255,255,255,0.05); border-radius: 8px; font-size: 0.85rem; border: 1px solid var(--card-border);">
+                    <div style="font-weight: 600; color: var(--text-primary); margin-bottom: 8px;"><i data-feather="book-open" style="width: 14px; height: 14px; vertical-align: middle;"></i> 原著論文（参考文献）</div>
+                    <ul style="color: var(--text-secondary); margin-left: 20px; line-height: 1.6;">
+                        <li>
+                            Zwietering, T. N. (1958). 
+                            <br>Suspending of solid particles in liquid by agitators. <i>Chemical Engineering Science</i>, 8(3-4), 244-253. 
+                            <a href="https://doi.org/10.1016/0009-2509(58)85031-9" target="_blank" style="color: var(--pink-accent);">[DOIリンク]</a>
+                        </li>
+                    </ul>
+                </div>
             </div>
         </div>
     </div>

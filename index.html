@@ -66,7 +66,7 @@
                                     <i data-feather="plus" style="width:14px; height:14px;"></i> 保存
                                 </button>
                                 <button id="load-preset-btn" class="btn btn-primary" style="flex: 1; padding: 8px 12px; font-size: 0.75rem; width: auto;" disabled>
-                                    <i data-feather="folder-open" style="width:14px; height:14px;"></i> 読込
+                                    <i data-feather="folder" style="width:14px; height:14px;"></i> 読込
                                 </button>
                                 <button id="delete-preset-btn" class="btn btn-secondary" style="color:var(--danger-color); border-color:rgba(239,68,68,0.2); padding: 8px; width: auto;" disabled>
                                     <i data-feather="trash-2" style="width:14px; height:14px;"></i>
@@ -100,12 +100,60 @@
                             <input type="number" id="rho" value="998" step="0.1">
                         </div>
                         <div class="input-group">
-                            <label for="mu">液粘度 μ (Pa·s)</label>
+                            <label for="mu">液粘度 μ (Pa·s) <span style="font-size:0.75rem;opacity:0.6;">(理想系)</span></label>
                             <input type="number" id="mu" value="0.417" step="0.001">
+                        </div>
+                        <div class="input-group" id="mu-eff-container" style="display:none;">
+                            <label style="color:var(--accent-color);">代表粘度 μ<sub>eff</sub> <span style="font-size:0.75rem;opacity:0.8;">(攪拌系)</span></label>
+                            <div id="mu-eff-display" style="padding: 8px 10px; background: rgba(6, 182, 212, 0.1); border: 1px solid rgba(6, 182, 212, 0.3); border-radius: 6px; font-size: 0.85rem; font-weight: 600; line-height: 1.2;">--</div>
                         </div>
                         <div class="input-group full-width">
                             <label for="V-act">液量 V<sub>act</sub> (L) <span style="font-size:0.75rem;opacity:0.6;">※ 0 = 概算値を使用</span></label>
                             <input type="number" id="V-act" value="0.7295" step="0.0001" min="0">
+                        </div>
+                    </div>
+                </section>
+
+                <!-- Rheology Model (Non-Newtonian) -->
+                <section class="config-section" id="rheology-section">
+                    <h3><i data-feather="activity"></i> レオロジーモデル</h3>
+                    <div class="input-grid">
+                        <div class="input-group full-width" style="display:flex; gap:8px; align-items:flex-end;">
+                            <div style="flex:1;">
+                                <label>モデルCSV読込 <span style="font-size:0.75rem;opacity:0.6;">（粘度計アプリから出力）</span></label>
+                                <div style="display:flex; gap:8px;">
+                                    <label for="rheology-csv-input" class="btn-csv-load" style="flex:1; display:block; padding:8px 12px; background:rgba(255,255,255,0.05); border:1px solid rgba(255,255,255,0.15); border-radius:8px; cursor:pointer; font-size:0.85rem; text-align:center;">
+                                        <i data-feather="upload" style="width:14px;height:14px;vertical-align:middle;"></i> ファイル選択
+                                    </label>
+                                    <button type="button" id="btn-clear-rheology" style="padding:8px 12px; background:rgba(239, 68, 68, 0.1); color:#ef4444; border:1px solid rgba(239, 68, 68, 0.2); border-radius:8px; cursor:pointer; font-size:0.85rem; display:none;" title="クリア">
+                                        <i data-feather="trash-2" style="width:14px;height:14px;vertical-align:middle;"></i>
+                                    </button>
+                                </div>
+                                <input type="file" id="rheology-csv-input" accept=".csv" style="display:none;">
+                            </div>
+                        </div>
+                        <div class="input-group full-width">
+                            <label for="rheology-sample-select">サンプル選択</label>
+                            <select id="rheology-sample-select" style="opacity:0.5;" disabled>
+                                <option value="">-- CSV未読込 --</option>
+                            </select>
+                        </div>
+                        <div class="input-group full-width">
+                            <label for="rheology-model-select">流動モデル</label>
+                            <select id="rheology-model-select">
+                                <option value="newtonian" selected>Newtonian（μ = 一定）</option>
+                            </select>
+                        </div>
+                        <div class="input-group" id="ks-group">
+                            <label for="ks-input">Metzner–Otto定数 k<sub>s</sub> <span style="font-size:0.75rem;opacity:0.6;">[-]</span></label>
+                            <input type="number" id="ks-input" value="11.5" step="0.1" min="0.1">
+                        </div>
+                        <div class="input-group full-width" id="cavern-model-group" style="display: none; padding-top: 8px; border-top: 1px dashed rgba(255,255,255,0.1); margin-top: 4px;">
+                            <label for="cavern-model">キャバーン形状モデル (降伏応力流体)</label>
+                            <select id="cavern-model">
+                                <option value="spherical">球形 (Spherical, Elson)</option>
+                                <option value="cylindrical">円筒形 (Cylindrical)</option>
+                            </select>
                         </div>
                     </div>
                 </section>
@@ -170,7 +218,7 @@
                         </div>
                         <div class="input-group">
                             <label for="n_stage">翼段数 N<sub>stage</sub></label>
-                            <input type="number" id="n_stage" value="4" step="1" min="1">
+                            <input type="number" id="n_stage" value="1" step="1" min="1">
                         </div>
                     </div>
                 </section>
@@ -183,13 +231,54 @@
                             <input type="checkbox" id="baffle-active" checked>
                             <label for="baffle-active">邪魔板あり</label>
                         </div>
-                        <div class="input-group">
+                        <div class="input-group" id="nB-container">
                             <label for="nB">邪魔板枚数 n<sub>B</sub></label>
                             <input type="number" id="nB" value="1" step="1" min="0">
                         </div>
-                        <div class="input-group">
+                        <div class="input-group" id="Bw-container">
                             <label for="Bw">邪魔板幅 B<sub>w</sub> (m)</label>
                             <input type="number" id="Bw" value="0.014" step="0.001">
+                        </div>
+                    </div>
+                </section>
+
+                <!-- Solid-Liquid / Particle Properties -->
+                <section class="config-section">
+                    <h3><i data-feather="box"></i> 固液攪拌・粒子データ</h3>
+                    <div class="input-grid">
+                        <div class="input-group full-width checkbox-group">
+                            <input type="checkbox" id="solid-liquid-active" checked>
+                            <label for="solid-liquid-active">固液系</label>
+                        </div>
+                        <div class="input-group" id="dp-um-container">
+                            <label for="dp-um">粒子径 d<sub>p</sub> (μm)</label>
+                            <input type="number" id="dp-um" value="150" step="1" min="1">
+                        </div>
+                        <div class="input-group" id="rho-S-container">
+                            <label for="rho-S">粒子密度 ρ<sub>s</sub> (kg/m³)</label>
+                            <input type="number" id="rho-S" value="2500" step="10">
+                        </div>
+                        <div class="input-group full-width" id="solid-conc-mode-container">
+                            <label for="solid-conc-mode">濃度入力モード</label>
+                            <select id="solid-conc-mode">
+                                <option value="wt-ratio" selected>対液重量比パーセント (X [wt%])</option>
+                                <option value="wt-total">全体重量濃度 (w [wt%])</option>
+                            </select>
+                        </div>
+                        <div class="input-group full-width" id="solid-conc-val-container">
+                            <label for="solid-conc-val" id="solid-conc-label">固体濃度 X (wt% (対液))</label>
+                            <input type="number" id="solid-conc-val" value="1.0" step="0.1" min="0.001">
+                        </div>
+                        <div class="input-group full-width" id="s-factor-mode-container">
+                            <label for="s-factor-mode">S 因子設定</label>
+                            <select id="s-factor-mode">
+                                <option value="auto" selected>自動 preset マッピング</option>
+                                <option value="custom">手動カスタム入力</option>
+                            </select>
+                        </div>
+                        <div class="input-group full-width" id="s-factor-custom-container" style="display:none;">
+                            <label for="s-factor-custom">幾何学的形状因子 S (カスタム)</label>
+                            <input type="number" id="s-factor-custom" value="5.0" step="0.1" min="0.1">
                         </div>
                     </div>
                 </section>
@@ -229,11 +318,20 @@
             </header>
 
             <div class="content-grid">
-                <!-- Chart Card -->
-                <div class="card chart-card">
-                    <div class="card-header">
-                        <h2><i data-feather="trending-up"></i> ラシュトン線図 (Rushton Plot)</h2>
-                        <div class="flex-row" style="gap: 8px; align-items: center;">
+                <!-- Main Tab Card (Rushton Plot & Particle Sim) -->
+                <div class="card chart-card" style="min-height: 520px;">
+                    <div class="card-header" style="display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid rgba(255, 255, 255, 0.05); padding-bottom: 8px;">
+                        <div class="tab-headers" style="display: flex; gap: 20px;">
+                            <button class="tab-btn active" id="tab-btn-rushton" style="background: none; border: none; color: var(--accent-color); border-bottom: 2px solid var(--accent-color); padding-bottom: 8px; font-weight: 600; font-family: var(--font-sans); cursor: pointer; display: flex; align-items: center; gap: 8px; font-size: 0.95rem;">
+                                <i data-feather="trending-up" style="width:16px;height:16px;"></i> ラシュトン線図
+                            </button>
+                            <button class="tab-btn" id="tab-btn-partsim" style="background: none; border: none; color: var(--text-secondary); border-bottom: 2px solid transparent; padding-bottom: 8px; font-weight: 500; font-family: var(--font-sans); cursor: pointer; display: flex; align-items: center; gap: 8px; font-size: 0.95rem;">
+                                <i data-feather="play" style="width:16px;height:16px;"></i> 粒子浮遊シミュレータ
+                            </button>
+                        </div>
+                        
+                        <!-- Controls for Rushton Plot (visible only on Rushton tab) -->
+                        <div id="rushton-controls" class="flex-row" style="gap: 8px; align-items: center;">
                             <label style="font-size: 0.75rem; color: var(--text-secondary);">Np表示範囲: </label>
                             <select id="chart-ymin" style="background: var(--bg-tertiary); border: 1px solid var(--card-border); color: var(--text-primary); padding: 4px 8px; border-radius: var(--border-radius-sm); font-size: 0.75rem; cursor: pointer;">
                                 <option value="auto" selected>自動</option>
@@ -251,12 +349,112 @@
                                 <option value="10000">10000</option>
                             </select>
                         </div>
-                        <span class="info-tooltip" title="Re vs Np の両対数プロット。実線は推算式、点は実験データです。">
-                            <i data-feather="info"></i>
-                        </span>
+                        <div id="low-re-warning" style="display:none; padding: 10px 14px; margin-top: 12px; border-radius: 10px; background: rgba(245, 158, 11, 0.12); border: 1px solid rgba(245, 158, 11, 0.3); color: #b45309; font-size: 0.82rem;">
+                            低 Re 領域を含みます。非ニュートン流体ではこの範囲の推算が不安定になる可能性があります。
+                        </div>
+                        
+                        <!-- Badge for Particle Sim (visible only on Sim tab) -->
+                        <div id="partsim-controls" style="display: none;">
+                            <span class="badge" id="sim-status-badge" style="background-color: rgba(239, 68, 68, 0.1); color: #ef4444; border-color: rgba(239, 68, 68, 0.2);">完全沈降</span>
+                        </div>
                     </div>
-                    <div class="chart-container">
+                    
+                    <!-- Tab Contents -->
+                    <!-- Tab 1: Rushton Plot -->
+                    <div id="tab-content-rushton" class="chart-container" style="display: block; flex-grow: 1;">
                         <canvas id="rushtonChart"></canvas>
+                    </div>
+                    
+                    <!-- Tab 2: Particle Simulation -->
+                    <div id="tab-content-partsim" style="display: none; flex-grow: 1; flex-direction: column; gap: 16px;">
+                        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 20px; align-items: stretch; height: 100%;">
+                            <!-- Left: Canvas -->
+                            <div style="background: var(--bg-tertiary); border: 1px solid var(--card-border); border-radius: var(--border-radius-md); padding: 12px; display: flex; flex-direction: column; align-items: center; justify-content: center; position: relative;">
+                                <canvas id="particleSimCanvas" width="450" height="320" style="max-width: 100%; border-radius: 4px; background: #0c121e; box-shadow: inset 0 0 10px rgba(0,0,0,0.5);"></canvas>
+                                <div style="width: 100%; display: flex; flex-direction: column; gap: 6px; margin-top: 12px;">
+                                    <div style="display: flex; justify-content: space-between; align-items: center; font-size: 0.8rem;">
+                                        <span style="color: var(--text-secondary);">シミュレーション回転数 N:</span>
+                                        <span style="font-weight: 700; color: var(--accent-color);"><span id="sim-speed-val">300</span> rpm</span>
+                                    </div>
+                                    <input type="range" id="sim-speed-slider" min="0" max="1200" step="10" value="300" style="width: 100%; accent-color: var(--accent-color); cursor: pointer; height: 6px; border-radius: 3px;">
+                                    <div style="display: flex; gap: 6px; margin-top: 2px;">
+                                        <button id="btn-set-njs" class="btn btn-secondary" style="flex: 1; padding: 6px; font-size: 0.7rem; width: auto; border-radius: 6px;">
+                                            <i data-feather="zap" style="width: 12px; height: 12px; vertical-align: middle;"></i> Njs 回転数設定
+                                        </button>
+                                        <div class="checkbox-group" style="padding: 0 6px; border: 1px solid var(--card-border); border-radius: var(--border-radius-sm); background: rgba(255,255,255,0.02); flex: 1.2; justify-content: center;">
+                                            <input type="checkbox" id="sim-speed-sync" checked>
+                                            <label for="sim-speed-sync" style="font-size: 0.7rem; white-space: nowrap; cursor: pointer;">測定データ同期</label>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                            
+                            <!-- Right: Results Table -->
+                            <div style="display: flex; flex-direction: column; justify-content: space-between; gap: 8px;">
+                                <div class="results-table-container" style="flex-grow: 1; max-height: none; overflow-y: auto;">
+                                    <table class="results-table" style="font-size: 0.8rem;">
+                                        <thead>
+                                            <tr>
+                                                <th>項目</th>
+                                                <th>定義 / 計算式</th>
+                                                <th style="text-align: right;">計算値</th>
+                                            </tr>
+                                        </thead>
+                                        <tbody>
+                                            <tr>
+                                                <td><strong>形状因子 S</strong></td>
+                                                <td style="color: var(--text-muted); font-size: 0.7rem;">S 因子 preset</td>
+                                                <td style="text-align: right; font-family: monospace; font-weight: 600; color: var(--accent-color);" id="sim-res-S">--</td>
+                                            </tr>
+                                            <tr>
+                                                <td><strong>密度差 Δρ</strong></td>
+                                                <td style="color: var(--text-muted); font-size: 0.7rem;">ρ<sub>s</sub> - ρ<sub>L</sub></td>
+                                                <td style="text-align: right; font-family: monospace; font-weight: 600;" id="sim-res-deltarho">-- kg/m³</td>
+                                            </tr>
+                                            <tr>
+                                                <td><strong>動粘度 ν</strong></td>
+                                                <td style="color: var(--text-muted); font-size: 0.7rem;">μ<sub>eff</sub> / ρ<sub>L</sub></td>
+                                                <td style="text-align: right; font-family: monospace; font-weight: 600;" id="sim-res-nu">-- m²/s</td>
+                                            </tr>
+                                            <tr>
+                                                <td><strong>濃度 X</strong></td>
+                                                <td style="color: var(--text-muted); font-size: 0.7rem;">(固体/液体)×100</td>
+                                                <td style="text-align: right; font-family: monospace; font-weight: 600;" id="sim-res-X">-- wt%</td>
+                                            </tr>
+                                            <tr style="background: rgba(6, 182, 212, 0.04); border-top: 1px solid rgba(6, 182, 212, 0.15);">
+                                                <td><strong>n<sub>js</sub> [1/s]</strong></td>
+                                                <td style="color: var(--text-secondary); font-size: 0.7rem;">秒間回転数</td>
+                                                <td style="text-align: right; font-family: monospace; font-weight: 700; color: var(--accent-color);" id="sim-res-njs-rps">-- 1/s</td>
+                                            </tr>
+                                            <tr style="background: rgba(6, 182, 212, 0.08); border-bottom: 2px solid var(--accent-color);">
+                                                <td><strong>N<sub>js</sub> [rpm]</strong></td>
+                                                <td style="color: var(--text-secondary); font-size: 0.7rem; font-weight: 600;">毎分限界回転数</td>
+                                                <td style="text-align: right; font-family: monospace; font-weight: 800; color: var(--accent-color); font-size: 1.05rem;" id="sim-res-Njs-rpm">-- rpm</td>
+                                            </tr>
+                                            <tr>
+                                                <td><strong>動力 P<sub>Njs</sub></strong></td>
+                                                <td style="color: var(--text-muted); font-size: 0.7rem;">Njs時の動力</td>
+                                                <td style="text-align: right; font-family: monospace; font-weight: 600; color: var(--success-color);" id="sim-res-P-njs">-- W</td>
+                                            </tr>
+                                            <tr>
+                                                <td><strong>正味 Pv<sub>Njs</sub></strong></td>
+                                                <td style="color: var(--text-muted); font-size: 0.7rem;">単位液量あたり</td>
+                                                <td style="text-align: right; font-family: monospace; font-weight: 600; color: var(--success-color);" id="sim-res-Pv-njs">-- W/m³</td>
+                                            </tr>
+                                            <tr id="cavern-row" style="display: none; background: rgba(245, 158, 11, 0.05); border-top: 1px dashed rgba(245, 158, 11, 0.3);">
+                                                <td><strong style="color: #d97706;">キャバーン径 D<sub>c</sub></strong></td>
+                                                <td style="color: var(--text-muted); font-size: 0.65rem;">降伏流体の流動領域</td>
+                                                <td style="text-align: right; font-family: monospace; font-weight: 600; color: #d97706;" id="sim-res-cavern-dc">-- m</td>
+                                            </tr>
+                                        </tbody>
+                                    </table>
+                                </div>
+                                <div style="background: rgba(239, 68, 68, 0.05); border: 1px solid rgba(239, 68, 68, 0.2); border-radius: var(--border-radius-sm); padding: 8px; font-size: 0.75rem; color: #ef4444; display: none;" id="sim-warning-box">
+                                    <i data-feather="alert-triangle" style="width: 12px; height: 12px; vertical-align: middle; margin-right: 4px;"></i>
+                                    <span id="sim-warning-text">--</span>
+                                </div>
+                            </div>
+                        </div>
                     </div>
                 </div>
 
@@ -280,6 +478,7 @@
                         </table>
                     </div>
                 </div>
+
 
                 <!-- Experimental Data Sheet -->
                 <div class="card data-card full-width">
@@ -350,6 +549,26 @@
                             </div>
                         </div>
                     </div>
+                    <div id="pdf-solid-liquid-section" style="grid-column: span 2; border-top: 1px solid #e5e7eb; padding-top: 6px; margin-top: 2px; display: none;">
+                        <strong>固液攪拌・粒子完全浮遊速度 (Zwietering式: N<sub>js</sub> = S·ν<sup>0.1</sup>·d<sub>p</sub><sup>0.2</sup>·g<sup>0.45</sup>·Δρ<sup>0.45</sup>·X<sup>0.13</sup>·d<sup>-0.85</sup>·ρ<sub>L</sub><sup>-0.45</sup>):</strong><br>
+                        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 6px; margin-top: 4px;">
+                            <div>
+                                ・粒子径 dp: <span id="pdf-val-dp"></span> μm<br>
+                                ・粒子密度 ρs: <span id="pdf-val-rhos"></span> kg/m³<br>
+                                ・密度差 Δρ: <span id="pdf-val-deltarho"></span> kg/m³<br>
+                                ・動粘度 ν: <span id="pdf-val-nu"></span> m²/s<br>
+                                ・濃度 X: <span id="pdf-val-xwt"></span> wt%
+                            </div>
+                            <div>
+                                ・形状因子 S: <span id="pdf-val-sfactor"></span><br>
+                                ・<strong>完全浮遊速度 N<sub>js</sub>: <span id="pdf-val-njs" style="color:#0891b2;"></span> rpm</strong><br>
+                                ・Re<sub>Njs</sub>: <span id="pdf-val-re-njs"></span> [-]<br>
+                                ・Np<sub>Njs</sub>: <span id="pdf-val-np-njs"></span> [-]<br>
+                                ・N<sub>js</sub> 時の攪拌所要動力: <span id="pdf-val-pnjs"></span> W<br>
+                                ・N<sub>js</sub> 時の単位体積動力: <span id="pdf-val-pvnjs"></span> W/m³
+                            </div>
+                        </div>
+                    </div>
                 </div>
                 <!-- Right: Vessel schematic diagram Image & Hidden Canvas -->
                 <div style="flex: 1; border-left: 1px solid #e5e7eb; padding-left: 16px; display: flex; justify-content: center; align-items: center; background: #ffffff;">
@@ -385,6 +604,12 @@
                     <!-- Dynamically populated via JS -->
                 </tbody>
             </table>
+            <!-- Non-Newtonian Info Section -->
+            <div id="pdf-non-newtonian-section" style="display: none; margin-bottom: 20px;">
+                <h2 style="font-size: 13px; font-weight: 600; color: #06b6d4; border-bottom: 1px solid #e5e7eb; padding-bottom: 6px; margin: 0 0 10px 0;">■ 非ニュートン流体 レオロジー特性 &amp; Metzner-Otto法 (有効粘度推算)</h2>
+                <div id="pdf-non-newtonian-content" style="font-size: 10px; line-height: 1.6; background: #f8fafc; padding: 12px; border: 1px solid #e2e8f0; border-radius: 6px;">
+                </div>
+            </div>
 
             <!-- Experimental Results Table -->
             <h2 style="font-size: 13px; font-weight: 600; color: #06b6d4; border-bottom: 1px solid #e5e7eb; padding-bottom: 6px; margin: 20px 0 10px 0;">■ 実験結果データ（測定ブロック平均値）</h2>
@@ -412,7 +637,7 @@
         </div>
     </div>
 
-    <script src="app.js?v=20260526_2015"></script>
+    <script src="app.js?v=20260530_2340"></script>
     <script>
         // Initialize Feather Icons
         feather.replace();
